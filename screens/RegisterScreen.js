@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons'; // 👈 Imported for the eye icons
 import axios from 'axios';
 
 export default function RegisterScreen({ navigation }) {
@@ -10,6 +11,10 @@ export default function RegisterScreen({ navigation }) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState([]);
+
+  // 👁️ Separate visibility toggles for each password field
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const IP_ADDRESS = '192.168.100.189'; 
 
@@ -59,6 +64,7 @@ export default function RegisterScreen({ navigation }) {
       <Text style={style.subTitle}>Join StockLens to manage your operations</Text>
 
       <View style={style.inputContainer}>
+        {/* Full Name */}
         <TextInput 
           style={[style.input, errors.includes('name') && style.errorInput]}
           placeholder="Full Name"
@@ -67,6 +73,7 @@ export default function RegisterScreen({ navigation }) {
           onChangeText={(val) => { setName(val); setErrors(errors.filter(e => e !== 'name')); }}
         />
 
+        {/* Email Address */}
         <TextInput 
           style={[style.input, errors.includes('email') && style.errorInput]}
           placeholder="Email Address"
@@ -77,6 +84,7 @@ export default function RegisterScreen({ navigation }) {
           autoCapitalize="none"
         />
 
+        {/* Phone Number */}
         <TextInput 
           style={[style.input, errors.includes('phone') && style.errorInput]}
           placeholder="Phone Number"
@@ -86,24 +94,37 @@ export default function RegisterScreen({ navigation }) {
           keyboardType="phone-pad"
         />
 
-        <TextInput 
-          style={[style.input, errors.includes('password') && style.errorInput]}
-          placeholder="Password"
-          placeholderTextColor="#aaa"
-          value={password}
-          onChangeText={(val) => { setPassword(val); setErrors(errors.filter(e => e !== 'password')); }}
-          secureTextEntry={true}
-          autoCapitalize="none"
-        />
+        {/* 👁️ Password Input Wrapper */}
+        <View style={[style.passwordWrapper, errors.includes('password') && style.errorInput]}>
+          <TextInput 
+            style={style.passwordInput}
+            placeholder="Password"
+            placeholderTextColor="#aaa"
+            value={password}
+            onChangeText={(val) => { setPassword(val); setErrors(errors.filter(e => e !== 'password')); }}
+            secureTextEntry={!showPassword}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={style.eyeIcon}>
+            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#7E8494" />
+          </TouchableOpacity>
+        </View>
 
-        <TextInput 
-          style={[style.input, errors.includes('confirm') && style.errorInput]}
-          placeholder="Confirm Password"
-          placeholderTextColor="#aaa"
-          value={confirmPassword}
-          onChangeText={(val) => { setConfirmPassword(val); setErrors(errors.filter(e => e !== 'confirm')); }}
-          secureTextEntry={true}
-        />
+        {/* 👁️ Confirm Password Input Wrapper */}
+        <View style={[style.passwordWrapper, errors.includes('confirm') && style.errorInput]}>
+          <TextInput 
+            style={style.passwordInput}
+            placeholder="Confirm Password"
+            placeholderTextColor="#aaa"
+            value={confirmPassword}
+            onChangeText={(val) => { setConfirmPassword(val); setErrors(errors.filter(e => e !== 'confirm')); }}
+            secureTextEntry={!showConfirmPassword}
+            autoCapitalize="none"
+          />
+          <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={style.eyeIcon}>
+            <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#7E8494" />
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity style={style.button} onPress={handleRegister} disabled={loading}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={style.buttonText}>Create Account</Text>}
@@ -124,6 +145,28 @@ const style = StyleSheet.create({
   inputContainer: { width: '100%', maxWidth: 320 },
   input: { backgroundColor: '#1C212D', color: '#FFF', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 8, fontSize: 16, marginBottom: 16, borderWidth: 1, borderColor: '#2A3245' },
   errorInput: { borderColor: '#FF4D4D' },
+  
+  // 🛠️ Style layout mechanics for inline icons
+  passwordWrapper: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#1C212D', 
+    borderRadius: 8, 
+    borderWidth: 1, 
+    borderColor: '#2A3245', 
+    marginBottom: 16 
+  },
+  passwordInput: { 
+    flex: 1, 
+    color: '#FFF', 
+    paddingHorizontal: 16, 
+    paddingVertical: 14, 
+    fontSize: 16 
+  },
+  eyeIcon: { 
+    paddingRight: 16 
+  },
+  
   button: { backgroundColor: '#3478F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 10 },
   buttonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
   toggleLink: { marginTop: 20, alignItems: 'center' },
