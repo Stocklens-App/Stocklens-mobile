@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 
-export default function LoginScreen({ navigation }) {
+export default function LoginScreen({ route, navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -11,6 +11,7 @@ export default function LoginScreen({ navigation }) {
   const [errors, setErrors] = useState([]);
 
   const IP_ADDRESS = '192.168.100.189'; 
+  
 
   const handleLogin = async () => {
     let newErrors = [];
@@ -39,6 +40,13 @@ export default function LoginScreen({ navigation }) {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (route?.params?.autoEmail && route?.params?.autoPassword) {
+      setEmail(route.params.autoEmail);
+      setPassword(route.params.autoPassword);
+    }
+  }, [route?.params]);
 
   return (
     <View style={style.container}>
@@ -98,3 +106,4 @@ const style = StyleSheet.create({
   toggleLink: { marginTop: 20, alignItems: 'center' },
   toggleText: { color: '#3478F6', fontSize: 14, fontWeight: '500' },
 });
+

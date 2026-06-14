@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function DashboardScreen({ route, navigation }) {
   const rawName = route?.params?.userName || 'User';
 
-  const MAX_LENGTH = 12;
+  const MAX_LENGTH = 8;
   const formattedName = rawName.length > MAX_LENGTH 
     ? `${rawName.slice(0, MAX_LENGTH)}...` 
     : rawName;

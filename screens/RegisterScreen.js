@@ -44,8 +44,11 @@ export default function RegisterScreen({ navigation }) {
         password: password,
         phoneNumber: phoneNumber.trim()
       });
-      Alert.alert('Success 🎉', 'Account created! Please sign in.');
-      navigation.navigate('Login');
+     
+      navigation.navigate('Login', { 
+  autoEmail: email.trim().toLowerCase(), 
+  autoPassword: password 
+});
     } catch (error) {
       if (error.response && error.response.data) {
         const errorMessage = error.response.data.error || String(error.response.data);
