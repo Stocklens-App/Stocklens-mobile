@@ -1,182 +1,118 @@
+import 'react-native-gesture-handler';
 import React, { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Standard with Expo
-import axios from 'axios';
+import { NavigationContainer } from '@react-navigation/native';
+import { createStackNavigator } from '@react-navigation/stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function App() {
-  const [screenMode, setScreenMode] = useState('login'); 
-  const [loading, setLoading] = useState(false);
-  
-  // Form fields
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+// Import our new screens (We will paste code into these next!)
+import LoginScreen from './screens/LoginScreen';
+import RegisterScreen from './screens/RegisterScreen';
+import DashboardScreen from './screens/DashboardScreen';
+import ProfileScreen from './screens/ProfileScreen';
 
-  // UI State
-  const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState([]); // Tracks which fields are empty
+const Stack = createStackNavigator();
+const Tab = createBottomTabNavigator();
 
-  const IP_ADDRESS = '192.168.100.189'; 
-
-  const validateFields = () => {
-    let newErrors = [];
-    if (screenMode === 'register' && !name) newErrors.push('name');
-    if (!email) newErrors.push('email');
-    if (!password) newErrors.push('password');
-    if (screenMode === 'register' && !phoneNumber) newErrors.push('phone');
-    if (screenMode === 'register' && !confirmPassword) newErrors.push('confirm');
-    
-    setErrors(newErrors);
-    return newErrors.length === 0;
-  };
-
-  const handleLogin = async () => {
-    if (!validateFields()) return;
-    setLoading(true);
-    try {
-      const response = await axios.post(`http://${IP_ADDRESS}:8081/auth/login`, {
-        email: email.trim(),
-        password: password
-      });
-      Alert.alert('Success 🎉', response.data);
-    } catch (error) {
-      Alert.alert('Login Failed', error.response?.data || 'Server error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async () => {
-    if (!validateFields()) return;
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await axios.post(`http://${IP_ADDRESS}:8081/auth/register`, {
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        password: password,
-        phoneNumber: phoneNumber.trim()
-      });
-      Alert.alert('Success 🎉', 'Account created! Please sign in.');
-      setScreenMode('login');
-    } catch (error) {
-      console.log("Full Registration Error:", error.response);
-      
-      if (error.response && error.response.data) {
-        // 1. If your backend sends a JSON Map (like Map.of("error", "Email exists"))
-        if (error.response.data.error) {
-          Alert.alert('Registration Failed', error.response.data.error);
-        } 
-        // 2. If the backend sends a plain string error message
-        else {
-          Alert.alert('Registration Failed', String(error.response.data));
-        }
-      } else {
-        Alert.alert('Network Error', 'Cannot reach backend server.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+// 🗺️ THIS HANDLES THE 4 MAIN TABS + THE TOP PROFILE BUTTON
+// 🗺️ UPDATED MAIN TABS CONFIGURATION
+function MainTabNavigator({ navigation, route }) {
+  // Grab the userName passed from LoginScreen safely
+  const userName = route?.params?.userName || 'User';
 
   return (
-    <View style={style.container}>
-      <Text style={style.logoText}>StockLens</Text>
-      <Text style={style.subTitle}>Track stock, sales, and profits in real-time</Text>
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#3478F6',
+        tabBarInactiveTintColor: '#7E8494',
+        tabBarStyle: { backgroundColor: '#1C212D', borderTopColor: '#2A3245', paddingBottom: 5 },
+        headerStyle: { backgroundColor: '#11141A', borderBottomColor: '#2A3245', elevation: 0, shadowOpacity: 0 },
+        headerTitleStyle: { color: '#FFF', fontWeight: 'bold' },
+        headerTitleAlign: 'center', // 🎯 FORCES THE NAME TO THE EXACT MIDDLE OF THE HEADER
+      }}
+    >
+      {/* 1️⃣ HOME TAB (WITH PROFILE BUTTON ONLY HERE) */}
+      <Tab.Screen 
+        name="Home" 
+        component={DashboardScreen} 
+        initialParams={{ userName: userName }} // Pass the user name down to the dashboard
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          headerShown : false,
+          // 👤 PROFILE BUTTON SITUATED ONLY ON THE HOME CORNER
+          headerRight: () => (
+            <TouchableOpacity 
+              style={{ paddingRight: 16 }} 
+              onPress={() => navigation.navigate('Profile')}
+            >
+              <Ionicons name="person-circle" size={28} color="#3478F6" />
+            </TouchableOpacity>
+          ),
+        }}
+      />
 
-      <View style={style.inputContainer}>
-        {screenMode === 'register' && (
-          <TextInput 
-            style={[style.input, errors.includes('name') && style.errorInput]}
-            placeholder="Full Name"
-            placeholderTextColor="#aaa"
-            value={name}
-            onChangeText={(val) => { setName(val); setErrors(errors.filter(e => e !== 'name')); }}
-          />
-        )}
+      {/* 2️⃣ INVEST TAB */}
+      <Tab.Screen 
+        name="Invest" 
+        component={DashboardScreen} // Temporary placeholder
+        options={{
+          tabBarLabel: 'Invest',
+          tabBarIcon: ({ color, size }) => <Ionicons name="cube" size={size} color={color} />,
+          headerRight: null, // Ensures profile is stripped completely
+        }}
+      />
 
-        <TextInput 
-          style={[style.input, errors.includes('email') && style.errorInput]}
-          placeholder="Email Address"
-          placeholderTextColor="#aaa"
-          value={email}
-          onChangeText={(val) => { setEmail(val); setErrors(errors.filter(e => e !== 'email')); }}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+      {/* 3️⃣ PULSE TAB */}
+      <Tab.Screen 
+        name="Pulse" 
+        component={DashboardScreen} // Temporary placeholder
+        options={{
+          tabBarLabel: 'Pulse',
+          tabBarIcon: ({ color, size }) => <Ionicons name="analytics" size={size} color={color} />,
+          headerRight: null,
+        }}
+      />
 
-        {screenMode === 'register' && (
-          <TextInput 
-            style={[style.input, errors.includes('phone') && style.errorInput]}
-            placeholder="Phone Number"
-            placeholderTextColor="#aaa"
-            value={phoneNumber}
-            onChangeText={(val) => { setPhoneNumber(val); setErrors(errors.filter(e => e !== 'phone')); }}
-            keyboardType="phone-pad"
-          />
-        )}
-
-        {/* Password field with Eye Icon */}
-        <View style={[style.passwordWrapper, errors.includes('password') && style.errorInput]}>
-          <TextInput 
-            style={style.passwordInput}
-            placeholder="Password"
-            placeholderTextColor="#aaa"
-            value={password}
-            onChangeText={(val) => { setPassword(val); setErrors(errors.filter(e => e !== 'password')); }}
-            secureTextEntry={!showPassword}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={style.eyeIcon}>
-            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#7E8494" />
-          </TouchableOpacity>
-        </View>
-
-        {screenMode === 'register' && (
-          <TextInput 
-            style={[style.input, errors.includes('confirm') && style.errorInput]}
-            placeholder="Confirm Password"
-            placeholderTextColor="#aaa"
-            value={confirmPassword}
-            onChangeText={(val) => { setConfirmPassword(val); setErrors(errors.filter(e => e !== 'confirm')); }}
-            secureTextEntry={!showPassword}
-          />
-        )}
-
-        <TouchableOpacity 
-          style={style.button} 
-          onPress={screenMode === 'login' ? handleLogin : handleRegister}
-          disabled={loading}
-        >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={style.buttonText}>{screenMode === 'login' ? 'Sign In' : 'Create Account'}</Text>}
-        </TouchableOpacity>
-
-        <TouchableOpacity style={style.toggleLink} onPress={() => setScreenMode(screenMode === 'login' ? 'register' : 'login')}>
-          <Text style={style.toggleText}>{screenMode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Sign In"}</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      {/* 4️⃣ LEARN TAB */}
+      <Tab.Screen 
+        name="Learn" 
+        component={DashboardScreen} // Temporary placeholder
+        options={{
+          tabBarLabel: 'Learn',
+          tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />,
+          headerRight: null,
+        }}
+      />
+    </Tab.Navigator>
   );
 }
 
-const style = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#11141A', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  logoText: { fontSize: 36, fontWeight: 'bold', color: '#3478F6', marginBottom: 8 },
-  subTitle: { fontSize: 14, color: '#7E8494', marginBottom: 40, textAlign: 'center' },
-  inputContainer: { width: '100%', maxWidth: 320 },
-  input: { backgroundColor: '#1C212D', color: '#FFF', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 8, fontSize: 16, marginBottom: 16, borderWidth: 1, borderColor: '#2A3245' },
-  errorInput: { borderColor: '#FF4D4D' }, // Red border for errors
-  passwordWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C212D', borderRadius: 8, borderWidth: 1, borderColor: '#2A3245', marginBottom: 16 },
-  passwordInput: { flex: 1, color: '#FFF', paddingHorizontal: 16, paddingVertical: 14, fontSize: 16 },
-  eyeIcon: { paddingRight: 16 },
-  button: { backgroundColor: '#3478F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
-  toggleLink: { marginTop: 20, alignItems: 'center' },
-  toggleText: { color: '#3478F6', fontSize: 14, fontWeight: '500' },
-});
+// 🚦 GLOBAL ROUTING CONTROLLER
+export default function App() {
+  return (
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {/* Auth Flow */}
+        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Register" component={RegisterScreen} />
+        
+        {/* Main Application Flow */}
+        <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+        
+        {/* Dedicated Profile Stack Screen */}
+        <Stack.Screen 
+          name="Profile" 
+          component={ProfileScreen} 
+          options={{
+            headerShown: true,
+            headerStyle: { backgroundColor: '#11141A', borderBottomColor: '#2A3245' },
+            headerTitleStyle: { color: '#FFF' },
+            headerTintColor: '#3478F6'
+          }}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
