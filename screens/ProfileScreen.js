@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { COLORS, SIZES } from '../theme'; // 👈 Centralized styling design tokens
 
 export default function ProfileScreen({ navigation }) {
   return (
@@ -18,9 +19,36 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const style = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#11141A', padding: 20, justifyContent: 'center', alignItems: 'center' },
-  titleText: { color: '#FFF', fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
-  subText: { color: '#7E8494', fontSize: 14, marginBottom: 40 },
-  logoutButton: { backgroundColor: '#FF4D4D', paddingVertical: 14, paddingHorizontal: 32, borderRadius: 8, width: '100%', maxWidth: 260, alignItems: 'center' },
-  logoutText: { color: '#FFF', fontSize: 16, fontWeight: '600' }
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background, 
+    padding: SIZES.padding, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  titleText: { 
+    color: COLORS.textMain, 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    marginBottom: 4 
+  },
+  subText: { 
+    color: COLORS.textSecondary, 
+    fontSize: 14, 
+    marginBottom: 40 
+  },
+  logoutButton: { 
+    backgroundColor: COLORS.error, // 🔑 Linked to your system's error/danger highlight color
+    paddingVertical: 14, 
+    paddingHorizontal: 32, 
+    borderRadius: SIZES.radius, 
+    width: '100%', 
+    maxWidth: 260, 
+    alignItems: 'center' 
+  },
+  logoutText: { 
+    color: COLORS.textMain, 
+    fontSize: 16, 
+    fontWeight: '600' 
+  }
 });

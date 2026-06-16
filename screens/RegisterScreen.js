@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // 👈 Imported for the eye icons
+import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import { COLORS, SIZES } from '../theme'; // 👈 Clean import from your shared theme
 
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -16,7 +17,7 @@ export default function RegisterScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const IP_ADDRESS = '192.168.100.189'; 
+  const IP_ADDRESS = '192.168.100.190'; 
 
   const validateFields = () => {
     let newErrors = [];
@@ -44,17 +45,28 @@ export default function RegisterScreen({ navigation }) {
         password: password,
         phoneNumber: phoneNumber.trim()
       });
-     
+      
       navigation.navigate('Login', { 
-  autoEmail: email.trim().toLowerCase(), 
-  autoPassword: password 
-});
+        autoEmail: email.trim().toLowerCase(), 
+        autoPassword: password 
+      });
     } catch (error) {
-      if (error.response && error.response.data) {
-        const errorMessage = error.response.data.error || String(error.response.data);
+      console.log("🔴 Backend Raw Error Payload:", error.response?.data);
+
+      if (error.response) {
+        const resData = error.response.data;
+        const errorMessage = 
+          (typeof resData === 'string' ? resData : null) ||
+          resData?.error || 
+          resData?.message || 
+          resData?.errorMessage || 
+          'Registration validation failed.';
+
         Alert.alert('Registration Failed', errorMessage);
-      } else {
+      } else if (error.request) {
         Alert.alert('Network Error', 'Cannot reach backend server.');
+      } else {
+        Alert.alert('Error', error.message);
       }
     } finally {
       setLoading(false);
@@ -71,7 +83,7 @@ export default function RegisterScreen({ navigation }) {
         <TextInput 
           style={[style.input, errors.includes('name') && style.errorInput]}
           placeholder="Full Name"
-          placeholderTextColor="#aaa"
+          placeholderTextColor={COLORS.textSecondary}
           value={name}
           onChangeText={(val) => { setName(val); setErrors(errors.filter(e => e !== 'name')); }}
         />
@@ -80,7 +92,7 @@ export default function RegisterScreen({ navigation }) {
         <TextInput 
           style={[style.input, errors.includes('email') && style.errorInput]}
           placeholder="Email Address"
-          placeholderTextColor="#aaa"
+          placeholderTextColor={COLORS.textSecondary}
           value={email}
           onChangeText={(val) => { setEmail(val); setErrors(errors.filter(e => e !== 'email')); }}
           keyboardType="email-address"
@@ -91,7 +103,7 @@ export default function RegisterScreen({ navigation }) {
         <TextInput 
           style={[style.input, errors.includes('phone') && style.errorInput]}
           placeholder="Phone Number"
-          placeholderTextColor="#aaa"
+          placeholderTextColor={COLORS.textSecondary}
           value={phoneNumber}
           onChangeText={(val) => { setPhoneNumber(val); setErrors(errors.filter(e => e !== 'phone')); }}
           keyboardType="phone-pad"
@@ -102,14 +114,14 @@ export default function RegisterScreen({ navigation }) {
           <TextInput 
             style={style.passwordInput}
             placeholder="Password"
-            placeholderTextColor="#aaa"
+            placeholderTextColor={COLORS.textSecondary}
             value={password}
             onChangeText={(val) => { setPassword(val); setErrors(errors.filter(e => e !== 'password')); }}
             secureTextEntry={!showPassword}
             autoCapitalize="none"
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={style.eyeIcon}>
-            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color="#7E8494" />
+            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -118,19 +130,19 @@ export default function RegisterScreen({ navigation }) {
           <TextInput 
             style={style.passwordInput}
             placeholder="Confirm Password"
-            placeholderTextColor="#aaa"
+            placeholderTextColor={COLORS.textSecondary}
             value={confirmPassword}
             onChangeText={(val) => { setConfirmPassword(val); setErrors(errors.filter(e => e !== 'confirm')); }}
             secureTextEntry={!showConfirmPassword}
             autoCapitalize="none"
           />
           <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={style.eyeIcon}>
-            <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color="#7E8494" />
+            <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={style.button} onPress={handleRegister} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={style.buttonText}>Create Account</Text>}
+          {loading ? <ActivityIndicator color={COLORS.textMain} /> : <Text style={style.buttonText}>Create Account</Text>}
         </TouchableOpacity>
 
         <TouchableOpacity style={style.toggleLink} onPress={() => navigation.navigate('Login')}>
@@ -142,26 +154,55 @@ export default function RegisterScreen({ navigation }) {
 }
 
 const style = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#11141A', alignItems: 'center', justifyContent: 'center', padding: 20 },
-  logoText: { fontSize: 32, fontWeight: 'bold', color: '#3478F6', marginBottom: 8 },
-  subTitle: { fontSize: 14, color: '#7E8494', marginBottom: 40, textAlign: 'center' },
-  inputContainer: { width: '100%', maxWidth: 320 },
-  input: { backgroundColor: '#1C212D', color: '#FFF', paddingHorizontal: 16, paddingVertical: 14, borderRadius: 8, fontSize: 16, marginBottom: 16, borderWidth: 1, borderColor: '#2A3245' },
-  errorInput: { borderColor: '#FF4D4D' },
-  
-  // 🛠️ Style layout mechanics for inline icons
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: SIZES.padding 
+  },
+  logoText: { 
+    fontSize: 32, 
+    fontWeight: 'bold', 
+    color: COLORS.primary, 
+    marginBottom: 8 
+  },
+  subTitle: { 
+    fontSize: 14, 
+    color: COLORS.textSecondary, 
+    marginBottom: 40, 
+    textAlign: 'center' 
+  },
+  inputContainer: { 
+    width: '100%', 
+    maxWidth: 320 
+  },
+  input: { 
+    backgroundColor: COLORS.surface, 
+    color: COLORS.textMain, 
+    paddingHorizontal: 16, 
+    paddingVertical: 14, 
+    borderRadius: SIZES.radius, 
+    fontSize: 16, 
+    marginBottom: 16, 
+    borderWidth: 1, 
+    borderColor: COLORS.border 
+  },
+  errorInput: { 
+    borderColor: COLORS.error 
+  },
   passwordWrapper: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    backgroundColor: '#1C212D', 
-    borderRadius: 8, 
+    backgroundColor: COLORS.surface, 
+    borderRadius: SIZES.radius, 
     borderWidth: 1, 
-    borderColor: '#2A3245', 
+    borderColor: COLORS.border, 
     marginBottom: 16 
   },
   passwordInput: { 
     flex: 1, 
-    color: '#FFF', 
+    color: COLORS.textMain, 
     paddingHorizontal: 16, 
     paddingVertical: 14, 
     fontSize: 16 
@@ -169,9 +210,25 @@ const style = StyleSheet.create({
   eyeIcon: { 
     paddingRight: 16 
   },
-  
-  button: { backgroundColor: '#3478F6', paddingVertical: 14, borderRadius: 8, alignItems: 'center', marginTop: 10 },
-  buttonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
-  toggleLink: { marginTop: 20, alignItems: 'center' },
-  toggleText: { color: '#3478F6', fontSize: 14, fontWeight: '500' },
+  button: { 
+    backgroundColor: COLORS.primary, 
+    paddingVertical: 14, 
+    borderRadius: SIZES.radius, 
+    alignItems: 'center', 
+    marginTop: 10 
+  },
+  buttonText: { 
+    color: COLORS.textMain, 
+    fontSize: 16, 
+    fontWeight: '600' 
+  },
+  toggleLink: { 
+    marginTop: 20, 
+    alignItems: 'center' 
+  },
+  toggleText: { 
+    color: COLORS.primary, 
+    fontSize: 14, 
+    fontWeight: '500' 
+  },
 });
