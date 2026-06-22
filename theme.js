@@ -7,9 +7,11 @@ export const COLORS = {
   textMain: '#FFFFFF',        // Primary crisp titles
   textSecondary: '#7E8494',   // Subtitles, descriptive text, and neutral icons
   error: '#FF4D4D',           // Validation warning highlights
+  success: '#00C896',
 };
 
 export const SIZES = {
   radius: 8,                  // Uniform corner rounding across the app
   padding: 20,                // Standardized outer page container spacing
 };
+

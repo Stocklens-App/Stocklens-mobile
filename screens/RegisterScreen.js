@@ -17,7 +17,7 @@ export default function RegisterScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const IP_ADDRESS = '192.168.100.190'; 
+  const IP_ADDRESS = '192.168.100.189'; 
 
   const validateFields = () => {
     let newErrors = [];
