@@ -10,55 +10,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline } from 'react-native-svg';
 import { COLORS, SIZES } from '../theme';
+import { useAppData } from '../context/AppContext';
 
-const INDEX_INFO = {
-  GSE: {
-    description: 'The Ghana Stock Exchange Composite Index tracks the performance of all listed companies on the Ghana Stock Exchange (GSE), the primary stock exchange in Ghana.',
-    topStocks: [
-      { ticker: 'MTN', name: 'MTN Ghana Ltd', price: 'GHS 1.75', change: '+2.34%', positive: true },
-      { ticker: 'GCB', name: 'GCB Bank PLC', price: 'GHS 5.10', change: '-1.05%', positive: false },
-      { ticker: 'SCB', name: 'Standard Chartered Bank', price: 'GHS 18.30', change: '+0.45%', positive: true },
-      { ticker: 'EGH', name: 'Ecobank Ghana PLC', price: 'GHS 6.20', change: '0.00%', positive: true },
-      { ticker: 'BOPP', name: 'Benso Oil Palm Plantation', price: 'GHS 21.50', change: '+4.85%', positive: true },
-    ],
-  },
-  SPX: {
-    description: 'The S&P 500 is a stock market index tracking the performance of 500 of the largest companies listed on stock exchanges in the United States.',
-    topStocks: [
-      { ticker: 'AAPL', name: 'Apple Inc.', price: '$189.30', change: '+0.85%', positive: true },
-      { ticker: 'MSFT', name: 'Microsoft Corp.', price: '$415.20', change: '+1.20%', positive: true },
-      { ticker: 'GOOGL', name: 'Alphabet Inc.', price: '$175.50', change: '-0.30%', positive: false },
-      { ticker: 'AMZN', name: 'Amazon.com Inc.', price: '$185.10', change: '+0.60%', positive: true },
-      { ticker: 'NVDA', name: 'NVIDIA Corp.', price: '$875.40', change: '+2.10%', positive: true },
-    ],
-  },
-  NDX: {
-    description: 'The NASDAQ Composite Index includes almost all stocks listed on the NASDAQ stock exchange, heavily weighted towards technology companies.',
-    topStocks: [
-      { ticker: 'AAPL', name: 'Apple Inc.', price: '$189.30', change: '+0.85%', positive: true },
-      { ticker: 'NVDA', name: 'NVIDIA Corp.', price: '$875.40', change: '+2.10%', positive: true },
-      { ticker: 'META', name: 'Meta Platforms', price: '$480.20', change: '+1.50%', positive: true },
-      { ticker: 'TSLA', name: 'Tesla Inc.', price: '$245.60', change: '-1.20%', positive: false },
-      { ticker: 'AMZN', name: 'Amazon.com Inc.', price: '$185.10', change: '+0.60%', positive: true },
-    ],
-  },
-  UKX: {
-    description: 'The FTSE 100 Index is a share index of the 100 companies listed on the London Stock Exchange with the highest market capitalisation.',
-    topStocks: [
-      { ticker: 'SHEL', name: 'Shell PLC', price: '£28.50', change: '-0.40%', positive: false },
-      { ticker: 'AZN', name: 'AstraZeneca PLC', price: '£115.20', change: '+0.80%', positive: true },
-      { ticker: 'HSBA', name: 'HSBC Holdings', price: '£6.45', change: '-0.20%', positive: false },
-      { ticker: 'ULVR', name: 'Unilever PLC', price: '£38.90', change: '+0.35%', positive: true },
-      { ticker: 'BP', name: 'BP PLC', price: '£4.85', change: '-0.55%', positive: false },
-    ],
-  },
-};
-
-const LARGE_SPARKLINE = {
-  GSE:  [28, 32, 30, 36, 35, 40, 38, 42, 41, 45, 43, 48, 46, 50, 51],
-  SPX:  [20, 24, 22, 26, 25, 30, 28, 32, 35, 33, 36, 38, 40, 43, 45],
-  NDX:  [15, 18, 17, 22, 20, 24, 26, 25, 28, 30, 29, 32, 35, 38, 40],
-  UKX:  [42, 40, 41, 38, 36, 34, 35, 32, 30, 31, 28, 26, 24, 22, 20],
+const INDEX_DESCRIPTIONS = {
+  GSE: 'The Ghana Stock Exchange Composite Index tracks the performance of all listed companies on the Ghana Stock Exchange (GSE), the primary stock exchange in Ghana.',
+  SPX: 'The S&P 500 is a stock market index tracking the performance of 500 of the largest companies listed on stock exchanges in the United States.',
+  NDX: 'The NASDAQ Composite Index includes almost all stocks listed on the NASDAQ stock exchange, heavily weighted towards technology companies.',
+  UKX: 'The FTSE 100 Index is a share index of the 100 companies listed on the London Stock Exchange with the highest market capitalisation.',
 };
 
 const LargeSparkline = ({ data, color }) => {
@@ -94,10 +52,12 @@ const LargeSparkline = ({ data, color }) => {
 
 export default function IndexDetailScreen({ route, navigation }) {
   const { index } = route.params;
+  const { trendingStocks } = useAppData();
   const color = index.positive ? COLORS.success : COLORS.error;
-  const info = INDEX_INFO[index.symbol] || {};
-  const topStocks = info.topStocks || [];
-  const chartData = LARGE_SPARKLINE[index.symbol] || index.sparklineData;
+  const description = INDEX_DESCRIPTIONS[index.symbol] || 'No description available.';
+
+  // For GSE show real stocks from context, for others show nothing since they're not in our DB
+  const topStocks = index.symbol === 'GSE' ? trendingStocks.slice(0, 5) : [];
 
   return (
     <View style={styles.root}>
@@ -141,11 +101,11 @@ export default function IndexDetailScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* CHART */}
+        {/* CHART — uses sparklineData from database */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Performance</Text>
           <View style={styles.chartWrapper}>
-            <LargeSparkline data={chartData} color={color} />
+            <LargeSparkline data={index.sparklineData} color={color} />
           </View>
           <View style={styles.chartLabels}>
             <Text style={styles.chartLabel}>7 days ago</Text>
@@ -156,34 +116,38 @@ export default function IndexDetailScreen({ route, navigation }) {
         {/* DESCRIPTION */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>About</Text>
-          <Text style={styles.description}>{info.description}</Text>
+          <Text style={styles.description}>{description}</Text>
         </View>
 
-        {/* TOP STOCKS */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Top Constituents</Text>
-          {topStocks.map((stock, idx) => {
-            const stockColor = stock.positive ? COLORS.success : COLORS.error;
-            return (
-              <View
-                key={stock.ticker}
-                style={[styles.stockRow, idx < topStocks.length - 1 && styles.stockRowBorder]}
-              >
-                <View style={styles.tickerBadge}>
-                  <Text style={styles.tickerText}>{stock.ticker.slice(0, 3)}</Text>
+        {/* TOP STOCKS — only for GSE since others aren't in our DB */}
+        {topStocks.length > 0 && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Top Constituents</Text>
+            {topStocks.map((stock, idx) => {
+              const stockColor = stock.positive ? COLORS.success : COLORS.error;
+              return (
+                <View
+                  key={stock.ticker}
+                  style={[styles.stockRow, idx < topStocks.length - 1 && styles.stockRowBorder]}
+                >
+                  <View style={[styles.stockLogo, { backgroundColor: stock.logoColor }]}>
+                    <Text style={styles.stockInitials}>{stock.initials}</Text>
+                  </View>
+                  <View style={styles.stockInfo}>
+                    <Text style={styles.stockName}>{stock.companyName}</Text>
+                    <Text style={styles.stockTicker}>{stock.ticker} • GSE</Text>
+                  </View>
+                  <View style={styles.stockPriceCol}>
+                    <Text style={styles.stockPrice}>GHS {stock.currentPrice.toFixed(2)}</Text>
+                    <Text style={[styles.stockChange, { color: stockColor }]}>
+                      {stock.positive ? '+' : ''}{stock.priceChangePercent}%
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.stockInfo}>
-                  <Text style={styles.stockName}>{stock.name}</Text>
-                  <Text style={styles.stockTicker}>{stock.ticker}</Text>
-                </View>
-                <View style={styles.stockPriceCol}>
-                  <Text style={styles.stockPrice}>{stock.price}</Text>
-                  <Text style={[styles.stockChange, { color: stockColor }]}>{stock.change}</Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
+              );
+            })}
+          </View>
+        )}
 
       </ScrollView>
     </View>
@@ -220,8 +184,8 @@ const styles = StyleSheet.create({
 
   stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
   stockRowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  tickerBadge: { width: 40, height: 40, borderRadius: 10, backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
-  tickerText: { fontSize: 10, fontWeight: '700', color: COLORS.primary },
+  stockLogo: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  stockInitials: { color: '#fff', fontSize: 11, fontWeight: '700' },
   stockInfo: { flex: 1 },
   stockName: { fontSize: 13, fontWeight: '600', color: COLORS.textMain, marginBottom: 2 },
   stockTicker: { fontSize: 11, color: COLORS.textSecondary },
