@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline } from 'react-native-svg';
-import axios from 'axios';
 import { COLORS, SIZES } from '../theme';
-
-const IP_ADDRESS = '192.168.100.189';
+import { useAppData } from '../context/AppContext';
 
 const Sparkline = ({ data, color, width = 60, height = 30 }) => {
   if (!data || data.length === 0) return null;
@@ -47,33 +45,21 @@ const Sparkline = ({ data, color, width = 60, height = 30 }) => {
 export default function DashboardScreen({ route, navigation }) {
   const rawName = route?.params?.userName || 'User';
   const displayName = rawName.length > 12 ? `${rawName.slice(0, 12)}...` : rawName;
-
-  const [loading, setLoading] = useState(true);
-  const [marketIndices, setMarketIndices] = useState([]);
-  const [trendingStocks, setTrendingStocks] = useState([]);
-  const [scamAlerts, setScamAlerts] = useState([]);
-
-  useEffect(() => {
-    fetchHomeData();
-  }, []);
-
-  const fetchHomeData = async () => {
-    try {
-      const response = await axios.get(`http://${IP_ADDRESS}:8081/api/home`);
-      setMarketIndices(response.data.marketIndices || []);
-      setTrendingStocks(response.data.trendingStocks || []);
-      setScamAlerts(response.data.scamAlerts || []);
-    } catch (error) {
-      console.log('Failed to fetch home data:', error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { marketIndices, trendingStocks, scamAlerts, loading, error } = useAppData();
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Ionicons name="cloud-offline-outline" size={48} color={COLORS.textSecondary} />
+        <Text style={styles.errorText}>{error}</Text>
       </View>
     );
   }
@@ -206,7 +192,8 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: COLORS.background },
   scroll: { flex: 1 },
   scrollContent: { padding: SIZES.padding, paddingTop: 54, paddingBottom: 40 },
-  loadingContainer: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center' },
+  loadingContainer: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  errorText: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', paddingHorizontal: 40 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   profileHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },

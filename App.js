@@ -13,6 +13,7 @@ import PulseScreen from './screens/PulseScreen';
 import LearnScreen from './screens/LearnScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import IndexDetailScreen from './screens/IndexDetailScreen';
+import { AppProvider } from './context/AppContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -71,27 +72,29 @@ function MainTabNavigator({ navigation, route }) {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-        <Stack.Screen
-          name="Profile"
-          component={ProfileScreen}
-          options={{
-            headerShown: true,
-            headerStyle: { backgroundColor: '#11141A', borderBottomColor: '#2A3245' },
-            headerTitleStyle: { color: '#FFF' },
-            headerTintColor: '#3478F6',
-          }}
-        />
-        <Stack.Screen
-          name="IndexDetail"
-          component={IndexDetailScreen}
-          options={{ headerShown: false }}
-        />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <AppProvider>
+      <NavigationContainer>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="MainTabs" component={MainTabNavigator} />
+          <Stack.Screen
+            name="Profile"
+            component={ProfileScreen}
+            options={{
+              headerShown: true,
+              headerStyle: { backgroundColor: '#11141A', borderBottomColor: '#2A3245' },
+              headerTitleStyle: { color: '#FFF' },
+              headerTintColor: '#3478F6',
+            }}
+          />
+          <Stack.Screen
+            name="IndexDetail"
+            component={IndexDetailScreen}
+            options={{ headerShown: false }}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </AppProvider>
   );
 }
