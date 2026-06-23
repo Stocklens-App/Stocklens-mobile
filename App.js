@@ -12,6 +12,7 @@ import InvestScreen from './screens/InvestScreen';
 import PulseScreen from './screens/PulseScreen';
 import LearnScreen from './screens/LearnScreen';
 import ProfileScreen from './screens/ProfileScreen';
+import IndexDetailScreen from './screens/IndexDetailScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -84,6 +85,11 @@ export default function App() {
             headerTitleStyle: { color: '#FFF' },
             headerTintColor: '#3478F6',
           }}
+        />
+        <Stack.Screen
+          name="IndexDetail"
+          component={IndexDetailScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>
