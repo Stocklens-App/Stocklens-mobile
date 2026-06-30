@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const AppContext = createContext();
 
-export const IP_ADDRESS = '192.168.100.189';
+export const IP_ADDRESS = '10.132.85.152';
 
 export function AppProvider({ children }) {
   const [marketIndices, setMarketIndices] = useState([]);
