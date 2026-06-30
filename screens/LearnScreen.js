@@ -2,10 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS, SIZES } from '../theme';
 
-export default function InvestScreen() {
+export default function LearnScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Invest Screen</Text>
+      <Text style={styles.text}>Learn Screen</Text>
     </View>
   );
 }
