@@ -5,12 +5,23 @@ import { COLORS, SIZES } from '../theme';
 export default function PulseScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Pulse Screen</Text>
+      {/* Keeps your functional text update */}
+      <Text style={styles.text}>Pulse Analytics coming soon!</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: SIZES.padding },
-  text: { color: COLORS.textMain, fontSize: 20, fontWeight: 'bold' },
+  container: { 
+    flex: 1, 
+    backgroundColor: COLORS.background || '#11141A', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: SIZES.padding || 16 
+  },
+  text: { 
+    color: COLORS.textMain || '#FFF', 
+    fontSize: 18, 
+    fontWeight: 'bold' 
+  },
 });

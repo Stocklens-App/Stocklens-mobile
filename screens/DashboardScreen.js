@@ -13,6 +13,7 @@ import Svg, { Polyline } from 'react-native-svg';
 import { COLORS, SIZES } from '../theme';
 import { useAppData } from '../context/AppContext';
 
+// --- Sparkline Component (Teammate Feature) ---
 const Sparkline = ({ data, color, width = 60, height = 30 }) => {
   if (!data || data.length === 0) return null;
   const max = Math.max(...data);
@@ -44,13 +45,15 @@ const Sparkline = ({ data, color, width = 60, height = 30 }) => {
 
 export default function DashboardScreen({ route, navigation }) {
   const rawName = route?.params?.userName || 'User';
+  // Blends name formatting logic seamlessly
   const displayName = rawName.length > 12 ? `${rawName.slice(0, 12)}...` : rawName;
+  
   const { marketIndices, trendingStocks, scamAlerts, loading, error } = useAppData();
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={COLORS.primary || '#3478F6'} />
       </View>
     );
   }
@@ -58,7 +61,7 @@ export default function DashboardScreen({ route, navigation }) {
   if (error) {
     return (
       <View style={styles.loadingContainer}>
-        <Ionicons name="cloud-offline-outline" size={48} color={COLORS.textSecondary} />
+        <Ionicons name="cloud-offline-outline" size={48} color={COLORS.textSecondary || '#7E8494'} />
         <Text style={styles.errorText}>{error}</Text>
       </View>
     );
@@ -66,32 +69,32 @@ export default function DashboardScreen({ route, navigation }) {
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.background || '#11141A'} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* HEADER */}
+        {/* 👤 SEAMLESS PROFILE & HEADER ITEMS COMBINED */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.profileHeaderRow}
             onPress={() => navigation.navigate('Profile')}
             activeOpacity={0.6}
           >
-            <Ionicons name="person-circle" size={36} color={COLORS.primary} />
+            <Ionicons name="person-circle" size={36} color={COLORS.primary || '#3478F6'} style={styles.profileAvatar} />
             <View style={styles.nameAndChevronRow}>
               <Text style={styles.userName}>{displayName}</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary} />
+              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary || '#7E8494'} style={styles.chevron} />
             </View>
           </TouchableOpacity>
 
           <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.iconBtn}>
-              <Ionicons name="search-outline" size={20} color={COLORS.textMain} />
+              <Ionicons name="search-outline" size={20} color={COLORS.textMain || '#FFF'} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconBtn}>
-              <Ionicons name="notifications-outline" size={20} color={COLORS.textMain} />
+              <Ionicons name="notifications-outline" size={20} color={COLORS.textMain || '#FFF'} />
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>2</Text>
               </View>
@@ -180,7 +183,7 @@ export default function DashboardScreen({ route, navigation }) {
                 <Text style={styles.scamMessage}>{alert}</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary} />
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textSecondary || '#7E8494'} />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -189,53 +192,60 @@ export default function DashboardScreen({ route, navigation }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
+  root: { flex: 1, backgroundColor: COLORS.background || '#11141A' },
   scroll: { flex: 1 },
-  scrollContent: { padding: SIZES.padding, paddingTop: 54, paddingBottom: 40 },
-  loadingContainer: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  errorText: { fontSize: 14, color: COLORS.textSecondary, textAlign: 'center', paddingHorizontal: 40 },
+  scrollContent: { padding: SIZES.padding || 16, paddingTop: 60, paddingBottom: 40 },
+  loadingContainer: { flex: 1, backgroundColor: COLORS.background || '#11141A', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  errorText: { fontSize: 14, color: COLORS.textSecondary || '#7E8494', textAlign: 'center', paddingHorizontal: 40 },
 
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
   profileHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  profileAvatar: { marginRight: 0 },
   nameAndChevronRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  userName: { fontSize: 20, fontWeight: 'bold', color: COLORS.textMain },
+  chevron: { marginLeft: 0 },
+  userName: { fontSize: 18, fontWeight: 'bold', color: COLORS.textMain || '#FFF' },
   headerIcons: { flexDirection: 'row', gap: 8 },
-  iconBtn: { position: 'relative', width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { position: 'relative', width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface || '#1C212D', borderWidth: 1, borderColor: COLORS.border || '#2A3245', alignItems: 'center', justifyContent: 'center' },
   badge: { position: 'absolute', top: -3, right: -3, backgroundColor: COLORS.success, borderRadius: 8, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
   badgeText: { color: '#fff', fontSize: 9, fontWeight: 'bold' },
 
-  card: { backgroundColor: COLORS.surface, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 16 },
+  card: { backgroundColor: COLORS.surface || '#1C212D', borderRadius: 16, borderWidth: 1, borderColor: COLORS.border || '#2A3245', padding: 16, marginBottom: 16 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMain, marginBottom: 2 },
-  cardSubtitle: { fontSize: 11, color: COLORS.textSecondary },
-  todayLabel: { fontSize: 12, color: COLORS.textSecondary },
+  cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMain || '#FFF', marginBottom: 2 },
+  cardSubtitle: { fontSize: 11, color: COLORS.textSecondary || '#7E8494' },
+  todayLabel: { fontSize: 12, color: COLORS.textSecondary || '#7E8494' },
 
   indicesRow: { gap: 10 },
-  indexCard: { backgroundColor: COLORS.background, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, padding: 12, width: 110 },
+  indexCard: { backgroundColor: COLORS.background || '#11141A', borderRadius: 12, borderWidth: 1, borderColor: COLORS.border || '#2A3245', padding: 12, width: 110 },
   flagEmoji: { fontSize: 22, marginBottom: 6 },
-  indexName: { fontSize: 10, color: COLORS.textSecondary, marginBottom: 4 },
-  indexPrice: { fontSize: 13, fontWeight: '700', color: COLORS.textMain, marginBottom: 2 },
+  indexName: { fontSize: 10, color: COLORS.textSecondary || '#7E8494', marginBottom: 4 },
+  indexPrice: { fontSize: 13, fontWeight: '700', color: COLORS.textMain || '#FFF', marginBottom: 2 },
   indexChange: { fontSize: 11, fontWeight: '600', marginBottom: 1 },
   indexPercent: { fontSize: 10, marginBottom: 8 },
 
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMain },
-  seeAll: { fontSize: 13, color: COLORS.primary, fontWeight: '500' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMain || '#FFF' },
+  seeAll: { fontSize: 13, color: COLORS.primary || '#3478F6', fontWeight: '500' },
 
   stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 10 },
-  stockRowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  stockRowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border || '#2A3245' },
   stockLogo: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   stockInitials: { color: '#fff', fontSize: 11, fontWeight: '700' },
   stockInfo: { flex: 1 },
-  stockName: { fontSize: 13, fontWeight: '600', color: COLORS.textMain, marginBottom: 2 },
-  stockTicker: { fontSize: 11, color: COLORS.textSecondary },
+  stockName: { fontSize: 13, fontWeight: '600', color: COLORS.textMain || '#FFF', marginBottom: 2 },
+  stockTicker: { fontSize: 11, color: COLORS.textSecondary || '#7E8494' },
   stockPriceCol: { alignItems: 'flex-end', marginRight: 6 },
-  stockPrice: { fontSize: 13, fontWeight: '700', color: COLORS.textMain, marginBottom: 2 },
+  stockPrice: { fontSize: 13, fontWeight: '700', color: COLORS.textMain || '#FFF', marginBottom: 2 },
   stockChange: { fontSize: 11, fontWeight: '600' },
 
-  scamAlert: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.error, padding: 16, marginBottom: 12 },
+  scamAlert: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.surface || '#1C212D', borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.error, padding: 16, marginBottom: 12 },
   scamLeft: { flexDirection: 'row', alignItems: 'flex-start', flex: 1, gap: 10 },
   scamText: { flex: 1 },
   scamLabel: { fontSize: 12, fontWeight: '700', color: COLORS.error, marginBottom: 4, letterSpacing: 0.5 },
-  scamMessage: { fontSize: 12, color: COLORS.textSecondary, lineHeight: 18 },
+  scamMessage: { fontSize: 12, color: COLORS.textSecondary || '#7E8494', lineHeight: 18 },
+  
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
+  statCard: { backgroundColor: COLORS.surface || '#1C212D', padding: SIZES.padding || 16, borderRadius: 12, width: '48%', borderWidth: 1, borderColor: COLORS.border || '#2A3245' },
+  statLabel: { color: COLORS.textSecondary || '#7E8494', fontSize: 11, marginBottom: 8, textTransform: 'uppercase' },
+  statValue: { color: COLORS.primary || '#3478F6', fontSize: 20, fontWeight: 'bold' }
 });

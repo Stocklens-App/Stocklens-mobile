@@ -3,8 +3,15 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+<<<<<<< Updated upstream
 import { Ionicons } from '@expo/vector-icons';
 
+=======
+import { TouchableOpacity, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+// 🎯 ALL UNIQUE SCREEN IMPORTS
+>>>>>>> Stashed changes
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import DashboardScreen from './screens/DashboardScreen';
@@ -12,12 +19,22 @@ import InvestScreen from './screens/InvestScreen';
 import PulseScreen from './screens/PulseScreen';
 import LearnScreen from './screens/LearnScreen';
 import ProfileScreen from './screens/ProfileScreen';
+<<<<<<< Updated upstream
 import IndexDetailScreen from './screens/IndexDetailScreen';
 import { AppProvider } from './context/AppContext';
+=======
+import InvestScreen from './screens/InvestScreen'; 
+import PulseScreen from './screens/PulseScreen';   
+import LearnScreen from './screens/learnscreen';  
+>>>>>>> Stashed changes
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+<<<<<<< Updated upstream
+=======
+// 🗺️ MAIN TABS CONFIGURATION
+>>>>>>> Stashed changes
 function MainTabNavigator({ navigation, route }) {
   const userName = route?.params?.userName || 'User';
 
@@ -32,14 +49,23 @@ function MainTabNavigator({ navigation, route }) {
         headerTitleAlign: 'center',
       }}
     >
+<<<<<<< Updated upstream
       <Tab.Screen
         name="Home"
         component={DashboardScreen}
         initialParams={{ userName }}
+=======
+      {/* 1️⃣ HOME TAB */}
+      <Tab.Screen 
+        name="Home" 
+        component={DashboardScreen} 
+        initialParams={{ userName: userName }}
+>>>>>>> Stashed changes
         options={{
           headerShown: false,
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+<<<<<<< Updated upstream
         }}
       />
       <Tab.Screen
@@ -53,14 +79,43 @@ function MainTabNavigator({ navigation, route }) {
       <Tab.Screen
         name="Pulse"
         component={PulseScreen}
+=======
+          headerShown : false,
+        }}
+      />
+
+      {/* 2️⃣ INVEST TAB */}
+      <Tab.Screen 
+        name="Invest" 
+        component={InvestScreen} 
+        options={{
+          tabBarLabel: 'Invest',
+          tabBarIcon: ({ color, size }) => <Ionicons name="cube" size={size} color={color} />,
+          headerRight: null,
+        }}
+      />
+
+      {/* 3️⃣ PULSE TAB */}
+      <Tab.Screen 
+        name="Pulse" 
+        component={PulseScreen} 
+>>>>>>> Stashed changes
         options={{
           tabBarLabel: 'Pulse',
           tabBarIcon: ({ color, size }) => <Ionicons name="analytics" size={size} color={color} />,
         }}
       />
+<<<<<<< Updated upstream
       <Tab.Screen
         name="Learn"
         component={LearnScreen}
+=======
+
+      {/* 4️⃣ LEARN TAB */}
+      <Tab.Screen 
+        name="Learn" 
+        component={LearnScreen} 
+>>>>>>> Stashed changes
         options={{
           tabBarLabel: 'Learn',
           tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />,
