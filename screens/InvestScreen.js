@@ -21,17 +21,17 @@ export default function InvestScreen({ navigation }) {
   const [query, setQuery] = useState('');
 
   const fetchStocks = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axios.get(`http://${IP_ADDRESS}:8081/api/stocks`);
-      setStocks(response.data || []);
-    } catch (err) {
-      setError('Could not load stocks. Check your connection and try again.');
-      setStocks([]);
-    } finally {
-      setLoading(false);
-    }
+  try {
+    setLoading(true);
+    setError(null);
+    const response = await axios.get(`http://${IP_ADDRESS}:8081/api/stocks`);
+    setStocks(response.data || []);
+   } catch (err) {
+    setError('Could not load stocks. Check your connection and try again.');
+    setStocks([]);
+   } finally {
+    setLoading(false);
+   }
   }, []);
 
   useEffect(() => {
@@ -58,18 +58,8 @@ export default function InvestScreen({ navigation }) {
         activeOpacity={0.6}
         onPress={() => navigation.navigate('StockDetail', { stock: item })}
       >
-        <View style={styles.logoWrapper}>
-          {item.logoUrl ? (
-            <Image
-              source={{ uri: item.logoUrl }}
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
-          ) : (
-            <View style={[styles.logoFallback, { backgroundColor: COLORS.surface }]}>
-              <Text style={styles.logoText}>{item.symbol.charAt(0)}</Text>
-            </View>
-          )}
+        <View style={[styles.logoFallback, { backgroundColor: item.logoColor || COLORS.surface }]}>
+          <Text style={styles.logoText}>{item.symbol.slice(0, 3)}</Text>
         </View>
 
         <View style={styles.info}>
@@ -247,9 +237,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   logoText: {
-    color: COLORS.textMain,
+    color: '#FFFFFF',
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 13,
+    letterSpacing: 0.5,
   },
   info: {
     flex: 1,
