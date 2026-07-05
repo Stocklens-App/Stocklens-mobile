@@ -13,6 +13,19 @@ import Svg, { Polyline } from 'react-native-svg';
 import { COLORS, SIZES } from '../theme';
 import { useAppData } from '../context/AppContext';
 
+// Maps home tab's trending stock shape to what StockDetail expects
+const toStockDetailFormat = (trending) => ({
+  id: trending.ticker,
+  symbol: trending.ticker,
+  name: trending.companyName,
+  currentPrice: trending.currentPrice,
+  priceChangePercentage: trending.priceChangePercent,
+  logoColor: trending.logoColor,
+  sector: trending.sector,
+  history: trending.sparklineData,
+  verifiedBrokers: [],
+});
+
 const Sparkline = ({ data, color, width = 60, height = 30 }) => {
   if (!data || data.length === 0) return null;
   const max = Math.max(...data);
@@ -150,6 +163,7 @@ export default function DashboardScreen({ route, navigation }) {
                 key={stock.ticker}
                 style={[styles.stockRow, idx < 4 && styles.stockRowBorder]}
                 activeOpacity={0.7}
+                onPress={() => navigation.navigate('StockDetail', { stock: toStockDetailFormat(stock) })}
               >
                 <View style={[styles.stockLogo, { backgroundColor: stock.logoColor }]}>
                   <Text style={styles.stockInitials}>{stock.initials}</Text>
