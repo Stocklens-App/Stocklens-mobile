@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../context/axios';
+import { API_CONFIG } from '../context/api';
 
 const AppContext = createContext();
-
-export const IP_ADDRESS = '192.168.100.189';
 
 export function AppProvider({ children }) {
   const [marketIndices, setMarketIndices] = useState([]);
   const [trendingStocks, setTrendingStocks] = useState([]);
   const [scamAlerts, setScamAlerts] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,20 +18,33 @@ export function AppProvider({ children }) {
 
   const fetchHomeData = async () => {
     try {
-      const response = await axios.get(`http://${IP_ADDRESS}:8081/api/home`);
-      setMarketIndices(response.data.marketIndices || []);
-      setTrendingStocks(response.data.trendingStocks || []);
-      setScamAlerts(response.data.scamAlerts || []);
+      setLoading(true);
+      setError(null);
+
+      const response = await api.get(API_CONFIG.ENDPOINTS.HOME);
+
+      setMarketIndices(response.data?.marketIndices ?? []);
+      setTrendingStocks(response.data?.trendingStocks ?? []);
+      setScamAlerts(response.data?.scamAlerts ?? []);
     } catch (err) {
-      setError('Failed to load data. Please check your connection.');
       console.log('AppContext fetch error:', err.message);
+      setError('Network error. Check backend or connection.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <AppContext.Provider value={{ marketIndices, trendingStocks, scamAlerts, loading, error, refetch: fetchHomeData }}>
+    <AppContext.Provider
+      value={{
+        marketIndices,
+        trendingStocks,
+        scamAlerts,
+        loading,
+        error,
+        refetch: fetchHomeData,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
