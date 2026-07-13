@@ -70,16 +70,16 @@ export default function LearnScreen() {
       </View>
 
       {/* SCROLLBAR TRACK WITH LEFT/RIGHT ARROWS */}
-      <View style={styles.scrollbarContainer}>
+      {/* <View style={styles.scrollbarContainer}>
         <Text style={styles.arrowIcon}>◀️</Text>
         <View style={styles.scrollbarTrack}>
           <View style={styles.scrollbarHandle} />
         </View>
         <Text style={styles.arrowIcon}>▶️</Text>
-      </View>
+      </View> */}
 
       {/* SUBTITLE PROMPT */}
-      <Text style={styles.subtitleText}>Master investing in Ghana, one question at a time</Text>
+      {/* <Text style={styles.subtitleText}>Master investing in Ghana, one question at a time</Text> */}
 
       {/* ACCORDION CARDS LIST CONTAINER */}
       <ScrollView style={styles.questionsList} showsVerticalScrollIndicator={false}>
@@ -108,9 +108,9 @@ export default function LearnScreen() {
               {isExpanded && (
                 <View style={styles.answerContainer}>
                   <Text style={styles.answerText}>{item.answer}</Text>
-                  <TouchableOpacity>
+                  {/* <TouchableOpacity>
                     <Text style={styles.readMoreLink}>Read full article ↗️</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
               )}
             </TouchableOpacity>
