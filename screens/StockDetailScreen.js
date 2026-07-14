@@ -1,5 +1,5 @@
 // screens/StockDetailScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Linking,
   StatusBar,
 } from 'react-native';
+import axios from 'axios';
+import { IP_ADDRESS } from '../context/AppContext';
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { COLORS, SIZES } from '../theme';
 
@@ -39,6 +41,21 @@ const initialsForBroker = (name) => {
 
 export default function StockDetailScreen({ route, navigation }) {
   const { stock } = route.params;
+  const [brokers, setBrokers] = useState(brokers || []);
+
+useEffect(() => {
+  // If brokers came pre-loaded (from Invest tab), skip fetching
+  if (brokers && brokers.length > 0) return;
+
+  // Otherwise, fetch fresh data using the ticker (symbol)
+  axios.get(`http://${IP_ADDRESS}:8081/api/stocks/by-ticker/${stock.symbol}`)
+    .then(response => {
+      setBrokers(response.data.verifiedBrokers || []);
+    })
+    .catch(() => {
+      // Silent fail - brokers section will show empty
+    });
+}, [stock.symbol]);
   const [activeTimeframe, setActiveTimeframe] = useState('1M');
 
   const isUp = stock.priceChangePercentage >= 0;
@@ -193,11 +210,11 @@ export default function StockDetailScreen({ route, navigation }) {
         {/* Brokers section */}
         <View style={styles.brokersSection}>
           <Text style={styles.brokersCount}>
-            {stock.verifiedBrokers?.length || 0} verified brokers
+            {brokers?.length || 0} verified brokers
           </Text>
 
-          {stock.verifiedBrokers && stock.verifiedBrokers.length > 0 ? (
-            stock.verifiedBrokers.map((broker, index) => {
+          {brokers && brokers.length > 0 ? (
+            brokers.map((broker, index) => {
               const isTopRated = index === 0;
               return (
                 <TouchableOpacity

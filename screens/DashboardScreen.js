@@ -15,7 +15,7 @@ import { useAppData } from '../context/AppContext';
 
 // Maps home tab's trending stock shape to what StockDetail expects
 const toStockDetailFormat = (trending) => ({
-  id: trending.ticker,
+  id: null,
   symbol: trending.ticker,
   name: trending.companyName,
   currentPrice: trending.currentPrice,

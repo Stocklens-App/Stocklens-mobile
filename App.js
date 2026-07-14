@@ -63,8 +63,9 @@ function MainTabNavigator({ navigation, route }) {
         name="Learn"
         component={LearnScreen}
         options={{
-          tabBarLabel: 'Learn',
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />,
+        
         }}
       />
     </Tab.Navigator>
