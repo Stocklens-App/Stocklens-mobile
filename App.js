@@ -10,6 +10,7 @@ import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import InvestScreen from './screens/InvestScreen';
+import StockDetailScreen from './screens/StockDetailScreen';
 import PulseScreen from './screens/PulseScreen';
 import LearnScreen from './screens/LearnScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -19,6 +20,7 @@ import { AppProvider } from './context/AppContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
 
 /* ---------------- TABS ---------------- */
 function MainTabs({ onLogout }) {
@@ -35,10 +37,13 @@ function MainTabs({ onLogout }) {
         headerStyle: {
           backgroundColor: '#11141A',
         },
-        headerTitleStyle: { color: '#FFF' },
+        headerTitleStyle: {
+          color: '#FFF',
+        },
         headerTitleAlign: 'center',
       }}
     >
+
       <Tab.Screen
         name="Home"
         component={DashboardScreen}
@@ -50,6 +55,7 @@ function MainTabs({ onLogout }) {
         }}
       />
 
+
       <Tab.Screen
         name="Invest"
         component={InvestScreen}
@@ -59,6 +65,7 @@ function MainTabs({ onLogout }) {
           ),
         }}
       />
+
 
       <Tab.Screen
         name="Pulse"
@@ -70,87 +77,135 @@ function MainTabs({ onLogout }) {
         }}
       />
 
+
       <Tab.Screen
         name="Learn"
         component={LearnScreen}
         options={{
+          headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="book" size={size} color={color} />
           ),
         }}
       />
 
-     <Tab.Screen
-  name="Profile"
-  options={{
-    tabBarIcon: ({ color, size }) => (
-      <Ionicons name="person" size={size} color={color} />
-    ),
-  }}
->
-  {(props) => (
-    <ProfileScreen
-      {...props}
-      onLogout={onLogout}
-    />
-  )}
-</Tab.Screen>
+
+      <Tab.Screen
+        name="Profile"
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="person" size={size} color={color} />
+          ),
+        }}
+      >
+        {(props) => (
+          <ProfileScreen
+            {...props}
+            onLogout={onLogout}
+          />
+        )}
+      </Tab.Screen>
+
+
     </Tab.Navigator>
   );
 }
 
+
+
 /* ---------------- APP ---------------- */
+
 export default function App() {
+
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
 
-const checkAuth = async () => {
-  try {
-    const savedToken = await AsyncStorage.getItem('token');
-    setToken(savedToken);
-  } catch (err) {
-    console.log('Auth check error:', err);
-  } finally {
-    setLoading(false);
-  }
-};
 
-useEffect(() => {
-  checkAuth();
-}, []);
+  const checkAuth = async () => {
+    try {
+      const savedToken = await AsyncStorage.getItem('token');
+      setToken(savedToken);
+    } catch (err) {
+      console.log('Auth check error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+
 
   if (loading) return null;
 
+
+
   return (
     <AppProvider>
+
       <NavigationContainer>
+
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {token ? (
-  <Stack.Screen name="MainTabs">
-    {(props) => (
-      <MainTabs
-        {...props}
-        onLogout={checkAuth}
-      />
-    )}
-  </Stack.Screen>
-) : (
+
+
+          {token ? (
+
+            <Stack.Screen name="MainTabs">
+              {(props) => (
+                <MainTabs
+                  {...props}
+                  onLogout={checkAuth}
+                />
+              )}
+            </Stack.Screen>
+
+          ) : (
+
             <>
+
               <Stack.Screen name="Login">
-  {(props) => (
-    <LoginScreen
-      {...props}
-      onLoginSuccess={checkAuth}
-    />
-  )}
-</Stack.Screen>
-              <Stack.Screen name="Register" component={RegisterScreen} />
+                {(props) => (
+                  <LoginScreen
+                    {...props}
+                    onLoginSuccess={checkAuth}
+                  />
+                )}
+              </Stack.Screen>
+
+
+              <Stack.Screen
+                name="Register"
+                component={RegisterScreen}
+              />
+
             </>
+
           )}
 
-          <Stack.Screen name="IndexDetail" component={IndexDetailScreen} />
+
+
+          <Stack.Screen
+            name="IndexDetail"
+            component={IndexDetailScreen}
+          />
+
+
+          <Stack.Screen
+            name="StockDetail"
+            component={StockDetailScreen}
+            options={{
+              headerShown: false
+            }}
+          />
+
+
         </Stack.Navigator>
+
       </NavigationContainer>
+
     </AppProvider>
   );
 }
