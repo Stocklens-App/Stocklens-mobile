@@ -17,7 +17,7 @@ export default function LearnScreen() {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = API_CONFIG.ACADEMIC;
+  const API_URL = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.ACADEMIC;
 
   useEffect(() => {
     const fetchData = async () => {

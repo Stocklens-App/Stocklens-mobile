@@ -22,7 +22,7 @@ export function AppProvider({ children }) {
       setError(null);
 
       const response = await api.get(API_CONFIG.ENDPOINTS.HOME);
-
+console.log("HOME API RESPONSE:", response.data);
       setMarketIndices(response.data?.marketIndices ?? []);
       setTrendingStocks(response.data?.trendingStocks ?? []);
       setScamAlerts(response.data?.scamAlerts ?? []);

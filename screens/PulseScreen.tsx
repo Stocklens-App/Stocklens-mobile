@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -15,17 +15,46 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
 
 // 🔥 READY FOR FUTURE BACKEND CONNECTION
-// import api from '../config/axios';
+import api from '../context/axios';
 
 type TimePeriod = '1M' | '6M' | '1Y' | '5Y';
+type Stock = {
+  id: number;
+  ticker: string;
+  companyName: string;
+  sector: string;
+  currentPrice: number;
+  priceChangePercent: number;
+  volatilityScore: number;
+  logoColor: string;
+  sparklineData: string;
+};
 
 export default function PulseScreen() {
-  const [amount, setAmount] = useState<string>('5,000');
-  const [period, setPeriod] = useState<TimePeriod>('1Y');
+ const [amount, setAmount] = useState<string>('5000');
+const [period, setPeriod] = useState<TimePeriod>('1Y');
 
-  // Future: replace with backend-driven values
-  const gainPercent = 25.0;
+const [stocks, setStocks] = useState<Stock[]>([]);
+const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
 
+const gainPercent = selectedStock?.priceChangePercent ?? 0;
+useEffect(() => {
+  const fetchStocks = async () => {
+    try {
+      const response = await api.get('/api/stocks');
+
+      setStocks(response.data);
+
+      if (response.data.length > 0) {
+        setSelectedStock(response.data[0]);
+      }
+    } catch (err) {
+      console.log('Error fetching stocks:', err);
+    }
+  };
+
+  fetchStocks();
+}, []);
   const numericAmount = parseFloat(amount.replace(/,/g, '')) || 0;
   const projectedGain = numericAmount * (gainPercent / 100);
   const totalValue = numericAmount + projectedGain;
