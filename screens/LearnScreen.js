@@ -193,7 +193,8 @@ const styles = StyleSheet.create({
     marginBottom: 30
   },
   questionsList: { 
-    flex: 1 
+    flex: 1 ,
+    marginTop:10
   },
   card: { 
     backgroundColor: '#111A2E', 
@@ -201,7 +202,8 @@ const styles = StyleSheet.create({
     borderRadius: 14, 
     marginBottom: 14, 
     borderWidth: 1, 
-    borderColor: '#1E293B'
+    borderColor: '#1E293B',
+    
   },
   expandedCard: { 
     borderColor: '#2563EB', 
