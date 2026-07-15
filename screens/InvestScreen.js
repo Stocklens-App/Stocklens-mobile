@@ -105,10 +105,10 @@ export default function InvestScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={styles.h1}>Invest</Text>
+        {/* <Text style={styles.h1}>Invest</Text>
         <Text style={styles.subtitle}>
           Browse verified stocks on the GSE & global markets
-        </Text>
+        </Text> */}
         <View style={styles.loadingHeader}>
           <ActivityIndicator color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading stocks...</Text>
@@ -123,7 +123,7 @@ export default function InvestScreen({ navigation }) {
   if (error) {
     return (
       <View style={styles.container}>
-        <Text style={styles.h1}>Invest</Text>
+        {/* <Text style={styles.h1}>Invest</Text> */}
         <View style={styles.errorBox}>
           <Text style={styles.errorIcon}>⚠</Text>
           <Text style={styles.errorTitle}>Something went wrong</Text>
@@ -142,16 +142,16 @@ export default function InvestScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.h1}>Invest</Text>
-      <Text style={styles.subtitle}>
+      {/* <Text style={styles.h1}>Invest</Text> */}
+      {/* <Text style={styles.subtitle}>
         Browse verified stocks on the GSE & global markets
-      </Text>
+      </Text> */}
 
       <View style={styles.search}>
         <Text style={styles.searchIcon}>⌕</Text>
         <TextInput
           style={styles.searchInput}
-          placeholder="Search MTN, Total, Apple..."
+          placeholder="   Search stocks"
           placeholderTextColor={COLORS.textSecondary}
           value={query}
           onChangeText={setQuery}
@@ -199,18 +199,18 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 12,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 16,
+    paddingVertical: 6,
+    marginBottom: 4,
   },
   searchIcon: {
     color: COLORS.textSecondary,
-    fontSize: 18,
+    fontSize: 30,
     marginRight: 10,
   },
   searchInput: {
     flex: 1,
     color: COLORS.textMain,
-    fontSize: 14,
+    fontSize: 18,
     padding: 0,
   },
   listContent: {
@@ -257,11 +257,13 @@ const styles = StyleSheet.create({
     color: COLORS.textMain,
     fontSize: 15,
     fontWeight: '600',
+    marginLeft: 12,
   },
   name: {
     color: COLORS.textSecondary,
     fontSize: 12,
     marginTop: 1,
+    marginLeft: 12,
   },
   priceBox: {
     alignItems: 'flex-end',
@@ -270,7 +272,8 @@ const styles = StyleSheet.create({
     color: COLORS.textMain,
     fontSize: 15,
     fontWeight: '600',
-    fontFamily: 'Georgia',
+    // fontFamily: 'Georgia',
+    // font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   },
   change: {
     fontSize: 12,
