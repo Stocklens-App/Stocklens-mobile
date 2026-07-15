@@ -70,16 +70,16 @@ export default function LearnScreen() {
       </View>
 
       {/* SCROLLBAR TRACK WITH LEFT/RIGHT ARROWS */}
-      <View style={styles.scrollbarContainer}>
+      {/* <View style={styles.scrollbarContainer}>
         <Text style={styles.arrowIcon}>◀️</Text>
         <View style={styles.scrollbarTrack}>
           <View style={styles.scrollbarHandle} />
         </View>
         <Text style={styles.arrowIcon}>▶️</Text>
-      </View>
+      </View> */}
 
       {/* SUBTITLE PROMPT */}
-      <Text style={styles.subtitleText}>Master investing in Ghana, one question at a time</Text>
+      {/* <Text style={styles.subtitleText}>Master investing in Ghana, one question at a time</Text> */}
 
       {/* ACCORDION CARDS LIST CONTAINER */}
       <ScrollView style={styles.questionsList} showsVerticalScrollIndicator={false}>
@@ -108,9 +108,9 @@ export default function LearnScreen() {
               {isExpanded && (
                 <View style={styles.answerContainer}>
                   <Text style={styles.answerText}>{item.answer}</Text>
-                  <TouchableOpacity>
+                  {/* <TouchableOpacity>
                     <Text style={styles.readMoreLink}>Read full article ↗️</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                 </View>
               )}
             </TouchableOpacity>
@@ -193,7 +193,8 @@ const styles = StyleSheet.create({
     marginBottom: 30
   },
   questionsList: { 
-    flex: 1 
+    flex: 1 ,
+    marginTop:10
   },
   card: { 
     backgroundColor: '#111A2E', 
@@ -201,7 +202,8 @@ const styles = StyleSheet.create({
     borderRadius: 14, 
     marginBottom: 14, 
     borderWidth: 1, 
-    borderColor: '#1E293B'
+    borderColor: '#1E293B',
+    
   },
   expandedCard: { 
     borderColor: '#2563EB', 
