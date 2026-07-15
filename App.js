@@ -12,7 +12,9 @@ import RegisterScreen from './screens/RegisterScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import InvestScreen from './screens/InvestScreen';
 import PulseScreen from './screens/PulseScreen';
-import LearnScreen from './screens/learnscreen'; // Note: Double check if 'learnScreen' or 'learnscreen' matches your folder
+
+import LearnScreen from './screens/LearnScreen'; // Note: Double check if 'learnScreen' or 'learnscreen' matches your folder
+
 import ProfileScreen from './screens/ProfileScreen';
 
 // ⏪ PUT BACK: IndexDetailScreen & AppProvider
@@ -74,6 +76,7 @@ function MainTabNavigator({ navigation, route }) {
         name="Learn"
         component={LearnScreen}
         options={{
+          headerShown: false,
           tabBarLabel: 'Learn',
           tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />,
         }}
@@ -96,7 +99,9 @@ export default function App() {
           <Stack.Screen 
             name="IndexDetail" 
             component={IndexDetailScreen} 
-            options={{ headerShown: true, title: 'Index Details' }} 
+
+            options={{ headerShown: false, title: 'Index Details' }} 
+
           />
           
           <Stack.Screen name="Profile" component={ProfileScreen} />

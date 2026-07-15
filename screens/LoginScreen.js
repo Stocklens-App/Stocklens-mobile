@@ -11,7 +11,7 @@ export default function LoginScreen({ route, navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState([]);
 
-  const IP_ADDRESS = '10.132.85.152'; 
+  const IP_ADDRESS = '10.67.150.167'; 
 
   const handleLogin = async () => {
     let newErrors = [];
