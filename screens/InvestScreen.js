@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { COLORS, SIZES } from '../theme';
-import { IP_ADDRESS } from '../context/AppContext';
+import { API_CONFIG } from '../context/api';
 
 export default function InvestScreen({ navigation }) {
   const [stocks, setStocks] = useState([]);
@@ -20,19 +20,26 @@ export default function InvestScreen({ navigation }) {
   const [error, setError] = useState(null);
   const [query, setQuery] = useState('');
 
-  const fetchStocks = useCallback(async () => {
+ const fetchStocks = useCallback(async () => {
   try {
     setLoading(true);
     setError(null);
-    const response = await axios.get(`http://${IP_ADDRESS}:8081/api/stocks`);
+
+    const response = await axios.get(
+      API_CONFIG.BASE_URL + '/api/stocks'
+    );
+
     setStocks(response.data || []);
-   } catch (err) {
+
+  } catch (err) {
+    console.log("Invest error:", err.message);
     setError('Could not load stocks. Check your connection and try again.');
     setStocks([]);
-   } finally {
+
+  } finally {
     setLoading(false);
-   }
-  }, []);
+  }
+}, []);
 
   useEffect(() => {
     fetchStocks();
