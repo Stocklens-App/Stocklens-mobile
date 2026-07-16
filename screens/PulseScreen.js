@@ -5,10 +5,10 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop, Line } from 'react-native-svg';
-import axios from 'axios';
+
 
 import { COLORS, SIZES } from '../theme';
-import { IP_ADDRESS } from '../context/AppContext'; // same IP source as your other tabs
+import api from '../context/axios';
 import { getPriceHistory } from '../data/priceHistory';
 import { simulate } from '../logic/simulation';
 
@@ -61,7 +61,7 @@ export default function PulseScreen() {
     setStocksLoading(true);
     setStocksError(false);
     try {
-      const res = await axios.get(`http://${IP_ADDRESS}:8081/api/stocks`);
+      const res = await api.get('/api/stocks');
       setStocks(res.data || []);
     } catch (err) {
       console.log('Pulse stocks fetch error:', err.message);
