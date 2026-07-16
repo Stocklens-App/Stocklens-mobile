@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { IP_ADDRESS } from '../context/AppContext';
+import api from '../context/axios';
 
 export default function LearnScreen() {
   const [activeCategory, setActiveCategory] = useState('Getting Started');
@@ -10,21 +10,24 @@ export default function LearnScreen() {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // NOTE: If testing via Expo Go on a physical phone, replace 'localhost' with your laptop's local IPv4 Address
-  const API_URL = `http://${IP_ADDRESS}:8081/api/academic/all`;
 
-  useEffect(() => {
-    fetch(API_URL)
-      .then((response) => response.json())
-      .then((data) => {
-        setModules(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error connecting to StockLens backend: ", error);
-        setLoading(false);
-      });
-  }, []);
+
+useEffect(() => {
+  const fetchModules = async () => {
+    try {
+      const response = await api.get('/api/academic/all');
+
+      setModules(response.data);
+      setLoading(false);
+
+    } catch (error) {
+      console.error("Error connecting to StockLens backend: ", error);
+      setLoading(false);
+    }
+  };
+
+  fetchModules();
+}, []);
 
   // Filter out live items from the state array by the active tab choice
   const filteredData = modules.filter(item => item.category === activeCategory);
