@@ -3,6 +3,7 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityInd
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { COLORS, SIZES } from '../theme'; // 👈 Centralized styling design tokens
+import { IP_ADDRESS } from '../context/AppContext';
 
 export default function LoginScreen({ route, navigation }) {
   const [email, setEmail] = useState('');
@@ -11,7 +12,7 @@ export default function LoginScreen({ route, navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState([]);
 
-  const IP_ADDRESS = '192.168.100.189'; 
+ 
 
   const handleLogin = async () => {
     let newErrors = [];
