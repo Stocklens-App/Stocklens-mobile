@@ -128,12 +128,12 @@ export default function PulseScreen() {
       >
 
         <View style={styles.searchBox}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Text style={styles.searchIcon}>⌕</Text>
           <TextInput
             style={styles.searchInput}
             value={query}
             onChangeText={setQuery}
-            placeholder="Search by name or symbol"
+            placeholder="Search stocks"
             placeholderTextColor={COLORS.textSecondary}
             autoCapitalize="characters"
             autoCorrect={false}
@@ -359,7 +359,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: COLORS.border, borderRadius: SIZES.radius,
     paddingHorizontal: 12, marginBottom: 14,
   },
-  searchIcon: { fontSize: 14, marginRight: 8 },
+  searchIcon: { fontSize: 30, marginRight: 8 ,color: COLORS.textSecondary},
   searchInput: { flex: 1, color: COLORS.textMain, fontSize: 15, paddingVertical: 12 },
   searchClear: { color: COLORS.textSecondary, fontSize: 14, paddingHorizontal: 4 },
   noMatch: { color: COLORS.textSecondary, fontSize: 14, marginBottom: 24, fontStyle: 'italic' },

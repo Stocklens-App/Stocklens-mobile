@@ -99,7 +99,7 @@ export default function DashboardScreen({ route, navigation }) {
             </View>
           </TouchableOpacity>
 
-          <View style={styles.headerIcons}>
+          {/* <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.iconBtn}>
               <Ionicons name="search-outline" size={20} color={COLORS.textMain} />
             </TouchableOpacity>
@@ -109,7 +109,7 @@ export default function DashboardScreen({ route, navigation }) {
                 <Text style={styles.badgeText}>2</Text>
               </View>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
 
         {/* MARKET PULSE */}
