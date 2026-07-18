@@ -5,10 +5,9 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import Svg, { Path, Defs, LinearGradient, Stop, Line } from 'react-native-svg';
-import axios from 'axios';
 
 import { COLORS, SIZES } from '../theme';
-import { IP_ADDRESS } from '../context/AppContext'; // same IP source as your other tabs
+import { useAppData } from '../context/AppContext';
 import { getPriceHistory } from '../data/priceHistory';
 import { simulate } from '../logic/simulation';
 
@@ -52,26 +51,13 @@ function buildPath(points, w, h, pad) {
 }
 
 export default function PulseScreen() {
-  // ── Live stocks from the backend (same endpoint as the Invest tab) ──
-  const [stocks, setStocks] = useState([]);
-  const [stocksLoading, setStocksLoading] = useState(true);
-  const [stocksError, setStocksError] = useState(false);
-
-  const fetchStocks = async () => {
-    setStocksLoading(true);
-    setStocksError(false);
-    try {
-      const res = await axios.get(`http://${IP_ADDRESS}:8081/api/stocks`);
-      setStocks(res.data || []);
-    } catch (err) {
-      console.log('Pulse stocks fetch error:', err.message);
-      setStocksError(true);
-    } finally {
-      setStocksLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchStocks(); }, []);
+  // ── Stocks come prefetched from AppContext (shared with the Invest tab) ──
+  const {
+    stocks,
+    stocksLoading,
+    stocksError,
+    refetchStocks: fetchStocks,
+  } = useAppData();
 
   // ── Simulator state ──
   const [mode, setMode] = useState('backtest');

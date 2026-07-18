@@ -1,30 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { IP_ADDRESS } from '../context/AppContext';
+import { useAppData } from '../context/AppContext';
 
 export default function LearnScreen() {
   const [activeCategory, setActiveCategory] = useState('Getting Started');
   const [expandedId, setExpandedId] = useState(null);
 
-  // Dynamic States for Cloud Database Integration
-  const [modules, setModules] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // NOTE: If testing via Expo Go on a physical phone, replace 'localhost' with your laptop's local IPv4 Address
-  const API_URL = `http://${IP_ADDRESS}:8081/api/academic/all`;
-
-  useEffect(() => {
-    fetch(API_URL)
-      .then((response) => response.json())
-      .then((data) => {
-        setModules(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error connecting to StockLens backend: ", error);
-        setLoading(false);
-      });
-  }, []);
+  // Lessons are prefetched at app startup by AppContext — no fetch here.
+  const { modules, modulesLoading: loading } = useAppData();
 
   // Filter out live items from the state array by the active tab choice
   const filteredData = modules.filter(item => item.category === activeCategory);
