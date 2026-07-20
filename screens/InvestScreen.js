@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { COLORS, SIZES } from '../theme';
-import { useAppData } from '../context/AppContext';
+import { useAppContext } from '../context/AppContext';
 
 export default function InvestScreen({ navigation }) {
   // Stocks are prefetched at app startup by AppContext — no fetch here.
@@ -20,7 +20,7 @@ export default function InvestScreen({ navigation }) {
     stocksLoading: loading,
     stocksError: error,
     refetchStocks: fetchStocks,
-  } = useAppData();
+  } = useAppContext();
 
   const [query, setQuery] = useState('');
 

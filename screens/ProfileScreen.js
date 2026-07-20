@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Switch, ActivityIndicator, ScrollView } from 'react-native';
 import { COLORS, SIZES } from '../theme'; 
-import { useAppContext } from '../context/AppContext';
+import { useAppContext, IP_ADDRESS } from '../context/AppContext';
 
 export default function ProfileScreen({ navigation }) {
   const [userData, setUserData] = useState(null);
@@ -13,7 +13,7 @@ export default function ProfileScreen({ navigation }) {
     setLoading(false);
     return;
   }
-  fetch(`http://10.148.37.167:8081/api/users/profile?email=${encodeURIComponent(currentUserEmail)}`)
+  fetch(`http://${IP_ADDRESS}:8081/api/users/profile?email=${encodeURIComponent(currentUserEmail)}`)
     .then((res) => {
       if (!res.ok) {
         throw new Error(`Server responded with ${res.status}`);
