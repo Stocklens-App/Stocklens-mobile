@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline } from 'react-native-svg';
 import { COLORS, SIZES } from '../theme';
-import { useAppData } from '../context/AppContext';
+import { useAppContext } from '../context/AppContext';
 
 // --- Sparkline Component (Teammate Feature) ---
 // Maps home tab's trending stock shape to what StockDetail expects
@@ -61,7 +61,7 @@ export default function DashboardScreen({ route, navigation }) {
   // Blends name formatting logic seamlessly
   const displayName = rawName.length > 12 ? `${rawName.slice(0, 12)}...` : rawName;
   
-  const { marketIndices, trendingStocks, scamAlerts, loading, error } = useAppData();
+  const { marketIndices, trendingStocks, scamAlerts, loading, error, unreadCount } = useAppContext();
 
   if (loading) {
     return (
@@ -106,11 +106,16 @@ export default function DashboardScreen({ route, navigation }) {
             <TouchableOpacity style={styles.iconBtn}>
               <Ionicons name="search-outline" size={20} color={COLORS.textMain || '#FFF'} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn}>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => navigation.navigate('Notifications')}
+            >
               <Ionicons name="notifications-outline" size={20} color={COLORS.textMain || '#FFF'} />
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>2</Text>
-              </View>
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>

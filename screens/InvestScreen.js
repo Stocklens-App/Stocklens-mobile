@@ -168,22 +168,16 @@ export default function InvestScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: COLORS.background || '#0A111E', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    padding: SIZES.padding || 16 
-  },
-  text: { 
-    color: COLORS.textMain || '#FFF', 
-    fontSize: 18, 
-    fontWeight: 'bold' 
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
     paddingHorizontal: SIZES.padding,
     paddingTop: SIZES.padding,
+  },
+  text: {
+    color: COLORS.textMain || '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   h1: {
     color: COLORS.textMain,
@@ -278,8 +272,6 @@ const styles = StyleSheet.create({
     color: COLORS.textMain,
     fontSize: 15,
     fontWeight: '600',
-    // fontFamily: 'Georgia',
-    // font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   },
   change: {
     fontSize: 12,

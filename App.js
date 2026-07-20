@@ -11,12 +11,12 @@ import DashboardScreen from './screens/DashboardScreen';
 import InvestScreen from './screens/InvestScreen';
 import StockDetailScreen from './screens/StockDetailScreen';
 import PulseScreen from './screens/PulseScreen';
-
-import LearnScreen from './screens/LearnScreen'; // Note: Double check if 'learnScreen' or 'learnscreen' matches your folder
-
 import LearnScreen from './screens/LearnScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import IndexDetailScreen from './screens/IndexDetailScreen';
+import AccountSettingsScreen from './screens/AccountSettingsScreen';
+import MyPortfolioScreen from './screens/MyPortfolioScreen';
+import NotificationsScreen from './screens/NotificationsScreen';
 import { AppProvider } from './context/AppContext';
 
 const Stack = createStackNavigator();
@@ -68,7 +68,6 @@ function MainTabNavigator({ navigation, route }) {
         options={{
           headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />,
-        
         }}
       />
     </Tab.Navigator>
@@ -83,14 +82,6 @@ export default function App() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="MainTabs" component={MainTabNavigator} />
-          
-          {/* Here is your IndexDetailScreen nested in the main stack */}
-          <Stack.Screen 
-            name="IndexDetail" 
-            component={IndexDetailScreen} 
-
-            options={{ headerShown: false, title: 'Index Details' }} 
-
           <Stack.Screen
             name="Profile"
             component={ProfileScreen}
@@ -102,9 +93,24 @@ export default function App() {
             }}
           />
           <Stack.Screen
+            name="AccountSettings"
+            component={AccountSettingsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="MyPortfolio"
+            component={MyPortfolioScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="Notifications"
+            component={NotificationsScreen}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
             name="IndexDetail"
             component={IndexDetailScreen}
-            options={{ headerShown: false }}
+            options={{ headerShown: false, title: 'Index Details' }}
           />
           <Stack.Screen
             name="StockDetail"

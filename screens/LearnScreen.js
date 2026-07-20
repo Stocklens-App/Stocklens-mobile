@@ -15,7 +15,7 @@ export default function LearnScreen() {
 
   useEffect(() => {
     fetch(API_URL)
-      .then((response) => response.json())
+      .then((response) => response.json()) // ✅ FIXED: Changed 'ipconi' to 'response' to resolve the ReferenceError
       .then((data) => {
         setModules(data);
         setLoading(false);
@@ -69,18 +69,6 @@ export default function LearnScreen() {
         </ScrollView>
       </View>
 
-      {/* SCROLLBAR TRACK WITH LEFT/RIGHT ARROWS */}
-      {/* <View style={styles.scrollbarContainer}>
-        <Text style={styles.arrowIcon}>◀️</Text>
-        <View style={styles.scrollbarTrack}>
-          <View style={styles.scrollbarHandle} />
-        </View>
-        <Text style={styles.arrowIcon}>▶️</Text>
-      </View> */}
-
-      {/* SUBTITLE PROMPT */}
-      {/* <Text style={styles.subtitleText}>Master investing in Ghana, one question at a time</Text> */}
-
       {/* ACCORDION CARDS LIST CONTAINER */}
       <ScrollView style={styles.questionsList} showsVerticalScrollIndicator={false}>
         {filteredData.map((item) => {
@@ -104,13 +92,12 @@ export default function LearnScreen() {
                 <Text style={styles.questionText}>{item.question}</Text>
                 
                 <Text style={styles.chevronIcon}>{isExpanded ? '▲' : '▼'}</Text>
-              </View>{/* EXPANDABLE BODY CONTENT */}
+              </View>
+
+              {/* EXPANDABLE BODY CONTENT */}
               {isExpanded && (
                 <View style={styles.answerContainer}>
                   <Text style={styles.answerText}>{item.answer}</Text>
-                  {/* <TouchableOpacity>
-                    <Text style={styles.readMoreLink}>Read full article ↗️</Text>
-                  </TouchableOpacity> */}
                 </View>
               )}
             </TouchableOpacity>
@@ -194,7 +181,7 @@ const styles = StyleSheet.create({
   },
   questionsList: { 
     flex: 1 ,
-    marginTop:10
+    marginTop: 10
   },
   card: { 
     backgroundColor: '#111A2E', 
@@ -203,7 +190,6 @@ const styles = StyleSheet.create({
     marginBottom: 14, 
     borderWidth: 1, 
     borderColor: '#1E293B',
-    
   },
   expandedCard: { 
     borderColor: '#2563EB', 

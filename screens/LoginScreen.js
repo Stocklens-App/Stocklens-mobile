@@ -3,6 +3,7 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityInd
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { COLORS, SIZES } from '../theme'; // 👈 Centralized styling design tokens
+import { useAppContext } from '../context/AppContext'; // 👈 added
 
 export default function LoginScreen({ route, navigation }) {
   const [email, setEmail] = useState('');
@@ -10,8 +11,9 @@ export default function LoginScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState([]);
+  const { setCurrentUserEmail } = useAppContext(); // 👈 added
 
-  const IP_ADDRESS = '10.67.150.167'; 
+  const IP_ADDRESS = '10.148.37.167'; 
 
   const handleLogin = async () => {
     let newErrors = [];
@@ -32,6 +34,8 @@ export default function LoginScreen({ route, navigation }) {
       const welcomeMessage = response.data;
       const nameOnly = welcomeMessage.split(', ')[1] || 'User';
       
+      setCurrentUserEmail(email.trim()); // 👈 added
+
       // 🚀 Pass the name to our Tab Navigator cleanly
       navigation.replace('MainTabs', { userName: nameOnly });
     } catch (error) {
