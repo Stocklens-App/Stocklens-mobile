@@ -26,7 +26,7 @@ const Tab = createBottomTabNavigator();
 function MainTabs({ onLogout }) {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         tabBarActiveTintColor: '#3478F6',
         tabBarInactiveTintColor: '#7E8494',
         tabBarStyle: {
@@ -41,7 +41,10 @@ function MainTabs({ onLogout }) {
           color: '#FFF',
         },
         headerTitleAlign: 'center',
-      }}
+        tabBarItemStyle: {
+  flex: 1,
+},
+      })}
     >
 
       <Tab.Screen
@@ -87,24 +90,26 @@ function MainTabs({ onLogout }) {
             <Ionicons name="book" size={size} color={color} />
           ),
         }}
-      />
+      /><Tab.Screen
+  name="Profile"
+  options={{
+    tabBarButton: () => null,
+    tabBarItemStyle: {
+      display: 'none',
+    },
+    headerShown: false,
+  }}
+>
+  {(props) => (
+    <ProfileScreen
+      {...props}
+      onLogout={onLogout}
+    />
+  )}
+</Tab.Screen>
 
 
-      <Tab.Screen
-        name="Profile"
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
-          ),
-        }}
-      >
-        {(props) => (
-          <ProfileScreen
-            {...props}
-            onLogout={onLogout}
-          />
-        )}
-      </Tab.Screen>
+     
 
 
     </Tab.Navigator>
@@ -119,18 +124,46 @@ export default function App() {
 
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
+console.log("CURRENT TOKEN STATE:", token);
+
+const checkAuth = async () => {
+  try {
+    const savedToken = await AsyncStorage.getItem('token');
+
+    console.log("TOKEN FROM STORAGE:", savedToken);
+
+    setToken(savedToken);
+
+  } catch (err) {
+    console.log('Auth check error:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
 
-  const checkAuth = async () => {
-    try {
-      const savedToken = await AsyncStorage.getItem('token');
-      setToken(savedToken);
-    } catch (err) {
-      console.log('Auth check error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleLogout = async () => {
+  try {
+
+    console.log("STARTING LOGOUT");
+
+    await AsyncStorage.removeItem('token');
+    await AsyncStorage.removeItem('userName');
+
+    console.log("TOKEN REMOVED");
+
+    const check = await AsyncStorage.getItem('token');
+
+    console.log("TOKEN AFTER LOGOUT:", check);
+
+    setToken(null);
+
+    console.log("TOKEN STATE SET TO NULL");
+
+  } catch (error) {
+    console.log("LOGOUT ERROR:", error);
+  }
+};
 
 
   useEffect(() => {
@@ -148,7 +181,10 @@ export default function App() {
 
       <NavigationContainer>
 
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+ <Stack.Navigator
+  key={token ? 'logged-in' : 'logged-out'}
+  screenOptions={{ headerShown: false }}
+>
 
 
           {token ? (
@@ -157,7 +193,7 @@ export default function App() {
               {(props) => (
                 <MainTabs
                   {...props}
-                  onLogout={checkAuth}
+                 onLogout={handleLogout}
                 />
               )}
             </Stack.Screen>
@@ -200,6 +236,7 @@ export default function App() {
               headerShown: false
             }}
           />
+  
 
 
         </Stack.Navigator>

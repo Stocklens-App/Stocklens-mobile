@@ -1,27 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { COLORS, SIZES } from '../theme';
 
 export default function ProfileScreen({ onLogout }) {
-
-  const handleLogout = async () => {
-    try {
-      // Remove saved login
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('userName');
-
-      console.log("USER LOGGED OUT");
-
-      // Tell App.js to refresh authentication
-      if (onLogout) {
-        await onLogout();
-      }
-
-    } catch (error) {
-      console.log("Logout error:", error);
-    }
-  };
+const handleLogout = () => {
+  if (onLogout) {
+    onLogout();
+  }
+};
 
   return (
     <View style={styles.container}>

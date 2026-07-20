@@ -37,11 +37,18 @@ export default function LoginScreen({ route, navigation, onLoginSuccess }) {
         email: email.trim(),
         password: password
       });
+console.log("LOGIN RESPONSE:", response.data);
+  const { token, name } = response.data;
 
-      const { token, name } = response.data;
+if (!token) {
+  throw new Error(response.data.error || "No token received");
+}
 
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('userName', name);
+await AsyncStorage.setItem('token', token);
+
+if (name) {
+  await AsyncStorage.setItem('userName', name);
+}
 
       console.log("LOGIN SUCCESS - TOKEN SAVED");
 

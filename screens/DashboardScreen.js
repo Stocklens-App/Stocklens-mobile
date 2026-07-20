@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline } from 'react-native-svg';
 import { COLORS, SIZES } from '../theme';
 import { useAppData } from '../context/AppContext';
-
+import { Modal, FlatList, TextInput } from 'react-native';
 // Maps home tab's trending stock shape to what StockDetail expects
 const toStockDetailFormat = (trending) => ({
   id: null,
@@ -59,7 +59,9 @@ export default function DashboardScreen({ route, navigation }) {
   const rawName = route?.params?.userName || 'User';
   const displayName = rawName.length > 12 ? `${rawName.slice(0, 12)}...` : rawName;
   const { marketIndices, trendingStocks, scamAlerts, loading, error } = useAppData();
-
+const [searchVisible, setSearchVisible] = useState(false);
+const [searchText, setSearchText] = useState('');
+const [filteredStocks, setFilteredStocks] = useState([]);
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -76,7 +78,21 @@ export default function DashboardScreen({ route, navigation }) {
       </View>
     );
   }
+const handleSearch = (text) => {
+  setSearchText(text);
 
+  if (text.trim() === '') {
+    setFilteredStocks([]);
+    return;
+  }
+
+  const results = trendingStocks.filter(stock =>
+    stock.companyName.toLowerCase().includes(text.toLowerCase()) ||
+    stock.ticker.toLowerCase().includes(text.toLowerCase())
+  );
+
+  setFilteredStocks(results);
+};
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
@@ -100,15 +116,30 @@ export default function DashboardScreen({ route, navigation }) {
           </TouchableOpacity>
 
           <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconBtn}>
-              <Ionicons name="search-outline" size={20} color={COLORS.textMain} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconBtn}>
-              <Ionicons name="notifications-outline" size={20} color={COLORS.textMain} />
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>2</Text>
-              </View>
-            </TouchableOpacity>
+            <TouchableOpacity
+  style={styles.iconBtn}
+  onPress={() => setSearchVisible(true)}
+>
+  <Ionicons
+    name="search-outline"
+    size={20}
+    color={COLORS.textMain}
+  />
+</TouchableOpacity>
+           <TouchableOpacity
+  style={styles.iconBtn}
+  onPress={() => alert("You have 2 new notifications")}
+>
+  <Ionicons 
+    name="notifications-outline" 
+    size={20} 
+    color={COLORS.textMain} 
+  />
+
+  <View style={styles.badge}>
+    <Text style={styles.badgeText}>2</Text>
+  </View>
+</TouchableOpacity>
           </View>
         </View>
 
@@ -145,6 +176,104 @@ export default function DashboardScreen({ route, navigation }) {
               );
             })}
           </ScrollView>
+          <Modal
+  visible={searchVisible}
+  animationType="slide"
+  onRequestClose={() => setSearchVisible(false)}
+>
+  <View style={{ flex: 1, backgroundColor: COLORS.background, padding: 20 }}>
+
+    <TextInput
+      placeholder="Search stocks..."
+      placeholderTextColor={COLORS.textSecondary}
+      value={searchText}
+      onChangeText={handleSearch}
+      style={{
+        backgroundColor: COLORS.surface,
+        color: COLORS.textMain,
+        padding: 15,
+        borderRadius: 10,
+        marginTop: 50,
+        marginBottom: 20,
+      }}
+    />
+
+   <FlatList
+  data={
+    searchText.trim() === ''
+      ? trendingStocks
+      : filteredStocks
+  }
+
+  keyExtractor={(item) => item.ticker}
+
+  renderItem={({ item }) => (
+
+    <TouchableOpacity
+      style={styles.searchRow}
+
+      onPress={() => {
+        setSearchVisible(false);
+
+        navigation.navigate('StockDetail', {
+          stock: toStockDetailFormat(item),
+        });
+      }}
+    >
+
+      {/* STOCK LOGO */}
+      <View
+        style={[
+          styles.stockLogo,
+          {
+            backgroundColor: item.logoColor || COLORS.primary
+          }
+        ]}
+      >
+        <Text style={styles.stockInitials}>
+          {item.initials || item.ticker.substring(0,3)}
+        </Text>
+      </View>
+
+
+      {/* STOCK DETAILS */}
+      <View>
+
+        <Text style={styles.stockName}>
+          {item.companyName}
+        </Text>
+
+        <Text style={styles.stockTicker}>
+          {item.ticker} • GSE
+        </Text>
+
+      </View>
+
+
+    </TouchableOpacity>
+
+  )}
+/>
+
+    <TouchableOpacity
+      onPress={() => setSearchVisible(false)}
+      style={{
+        marginTop: 20,
+        alignItems: 'center',
+      }}
+    >
+      <Text
+        style={{
+          color: COLORS.primary,
+          fontWeight: 'bold',
+        }}
+      >
+        Close
+      </Text>
+    </TouchableOpacity>
+
+  </View>
+</Modal>
         </View>
 
         {/* TRENDING TODAY */}
@@ -246,7 +375,14 @@ const styles = StyleSheet.create({
   stockPriceCol: { alignItems: 'flex-end', marginRight: 6 },
   stockPrice: { fontSize: 13, fontWeight: '700', color: COLORS.textMain, marginBottom: 2 },
   stockChange: { fontSize: 11, fontWeight: '600' },
-
+searchRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: COLORS.border,
+  gap: 12,
+},
   scamAlert: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1.5, borderColor: COLORS.error, padding: 16, marginBottom: 12 },
   scamLeft: { flexDirection: 'row', alignItems: 'flex-start', flex: 1, gap: 10 },
   scamText: { flex: 1 },
