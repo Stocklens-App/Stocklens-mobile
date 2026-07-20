@@ -4,9 +4,12 @@ import { registerForPushNotificationsAsync } from '../utils/registerForPushNotif
 
 const AppContext = createContext();
 
-export const IP_ADDRESS = '10.148.37.167';
+export const IP_ADDRESS = '10.212.11.167';
+
+const BASE = `http://${IP_ADDRESS}:8081`;
 
 export function AppProvider({ children }) {
+  // ── Home tab data ──
   const [marketIndices, setMarketIndices] = useState([]);
   const [trendingStocks, setTrendingStocks] = useState([]);
   const [scamAlerts, setScamAlerts] = useState([]);
@@ -18,23 +21,69 @@ export function AppProvider({ children }) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    fetchHomeData();
-  }, []);
+  // ── Stock list (Invest + Pulse tabs) ──
+  const [stocks, setStocks] = useState([]);
+  const [stocksLoading, setStocksLoading] = useState(true);
+  const [stocksError, setStocksError] = useState(null);
 
-  const fetchHomeData = async () => {
+  // ── Learn tab modules ──
+  const [modules, setModules] = useState([]);
+  const [modulesLoading, setModulesLoading] = useState(true);
+  const [modulesError, setModulesError] = useState(null);
+
+  const fetchHomeData = useCallback(async () => {
     try {
-      const response = await axios.get(`http://${IP_ADDRESS}:8081/api/home`);
+      setLoading(true);
+      setError(null);
+      const response = await axios.get(`${BASE}/api/home`);
       setMarketIndices(response.data.marketIndices || []);
       setTrendingStocks(response.data.trendingStocks || []);
       setScamAlerts(response.data.scamAlerts || []);
     } catch (err) {
       setError('Failed to load data. Please check your connection.');
-      console.log('AppContext fetch error:', err.message);
+      console.log('AppContext home fetch error:', err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  const fetchStocks = useCallback(async () => {
+    try {
+      setStocksLoading(true);
+      setStocksError(null);
+      const response = await axios.get(`${BASE}/api/stocks`);
+      setStocks(response.data || []);
+    } catch (err) {
+      setStocksError('Could not load stocks. Check your connection and try again.');
+      setStocks([]);
+      console.log('AppContext stocks fetch error:', err.message);
+    } finally {
+      setStocksLoading(false);
+    }
+  }, []);
+
+  const fetchModules = useCallback(async () => {
+    try {
+      setModulesLoading(true);
+      setModulesError(null);
+      const response = await axios.get(`${BASE}/api/academic/all`);
+      setModules(response.data || []);
+    } catch (err) {
+      setModulesError('Could not load lessons. Check your connection.');
+      setModules([]);
+      console.log('AppContext modules fetch error:', err.message);
+    } finally {
+      setModulesLoading(false);
+    }
+  }, []);
+
+  // Fire all three in parallel the moment the app starts — before login finishes.
+  // By the time any tab is opened, the data is already here.
+  useEffect(() => {
+    fetchHomeData();
+    fetchStocks();
+    fetchModules();
+  }, [fetchHomeData, fetchStocks, fetchModules]);
 
   const fetchUnreadCount = useCallback(async (email) => {
     if (!email) return;
@@ -111,18 +160,31 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider
       value={{
+        // Home
         marketIndices,
         trendingStocks,
         scamAlerts,
         loading,
         error,
         refetch: fetchHomeData,
+        // User / auth
         currentUserEmail,
         setCurrentUserEmail,
+        // Notifications
         notificationsEnabled,
         toggleNotifications,
         unreadCount,
         refreshUnreadCount,
+        // Stocks
+        stocks,
+        stocksLoading,
+        stocksError,
+        refetchStocks: fetchStocks,
+        // Learn
+        modules,
+        modulesLoading,
+        modulesError,
+        refetchModules: fetchModules,
       }}
     >
       {children}

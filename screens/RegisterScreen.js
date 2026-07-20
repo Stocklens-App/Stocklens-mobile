@@ -3,6 +3,7 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityInd
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { COLORS, SIZES } from '../theme'; // 👈 Clean import from your shared theme
+import { IP_ADDRESS } from '../context/AppContext';
 
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -16,8 +17,6 @@ export default function RegisterScreen({ navigation }) {
   // 👁️ Separate visibility toggles for each password field
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  const IP_ADDRESS = '10.148.37.167'; 
 
   const validateFields = () => {
     let newErrors = [];

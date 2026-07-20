@@ -1,5 +1,5 @@
 // screens/InvestScreen.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,33 +10,19 @@ import {
   Image,
   ActivityIndicator,
 } from 'react-native';
-import axios from 'axios';
 import { COLORS, SIZES } from '../theme';
-import { IP_ADDRESS } from '../context/AppContext';
+import { useAppData } from '../context/AppContext';
 
 export default function InvestScreen({ navigation }) {
-  const [stocks, setStocks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Stocks are prefetched at app startup by AppContext — no fetch here.
+  const {
+    stocks,
+    stocksLoading: loading,
+    stocksError: error,
+    refetchStocks: fetchStocks,
+  } = useAppData();
+
   const [query, setQuery] = useState('');
-
-  const fetchStocks = useCallback(async () => {
-  try {
-    setLoading(true);
-    setError(null);
-    const response = await axios.get(`http://${IP_ADDRESS}:8081/api/stocks`);
-    setStocks(response.data || []);
-   } catch (err) {
-    setError('Could not load stocks. Check your connection and try again.');
-    setStocks([]);
-   } finally {
-    setLoading(false);
-   }
-  }, []);
-
-  useEffect(() => {
-    fetchStocks();
-  }, [fetchStocks]);
 
   const visibleStocks = stocks.filter((stock) => {
     const q = query.trim().toLowerCase();
