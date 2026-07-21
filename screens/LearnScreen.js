@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useAppContext } from '../context/AppContext';
+import { useAppContext, IP_ADDRESS } from '../context/AppContext';
 
 export default function LearnScreen() {
   const [activeCategory, setActiveCategory] = useState('Getting Started');
@@ -8,13 +8,28 @@ export default function LearnScreen() {
 
   // Lessons are prefetched at app startup by AppContext — no fetch here.
   const { modules, modulesLoading: loading } = useAppContext();
+  const { currentUserEmail } = useAppContext();
 
   // Filter out live items from the state array by the active tab choice
   const filteredData = modules.filter(item => item.category === activeCategory);
   const categories = ['Getting Started', 'Glossary', 'GSE Basics', 'Scams'];
 
   const toggleExpand = (id) => {
-    setExpandedId(expandedId === id ? null : id);
+    const opening = expandedId !== id;
+    setExpandedId(opening ? id : null);
+
+    // Mark this module as completed the first time it's opened.
+    // Safe to call every time it's opened — the backend only counts it once.
+    if (opening && currentUserEmail) {
+      fetch(`http://${IP_ADDRESS}:8081/api/academic/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: currentUserEmail, moduleId: String(id) }),
+      }).catch((err) => {
+        // Non-critical — don't interrupt reading if this fails.
+        console.log('Module completion tracking error:', err.message);
+      });
+    }
   };
 
   // LOADING SKELETON LOADER SCREEN
