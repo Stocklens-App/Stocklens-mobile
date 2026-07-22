@@ -3,7 +3,7 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityInd
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { COLORS, SIZES } from '../theme'; // 👈 Centralized styling design tokens
-import { useAppContext, IP_ADDRESS } from '../context/AppContext'; // 👈 added
+import { useAppContext, IP_ADDRESS } from '../context/AppContext';
 
 export default function LoginScreen({ route, navigation }) {
   const [email, setEmail] = useState('');
@@ -11,7 +11,7 @@ export default function LoginScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState([]);
-  const { setCurrentUserEmail } = useAppContext(); // 👈 added
+  const { setCurrentUserEmail } = useAppContext();
 
   const handleLogin = async () => {
     let newErrors = [];
@@ -32,7 +32,7 @@ export default function LoginScreen({ route, navigation }) {
       const welcomeMessage = response.data;
       const nameOnly = welcomeMessage.split(', ')[1] || 'User';
       
-      setCurrentUserEmail(email.trim()); // 👈 added
+      setCurrentUserEmail(email.trim());
 
       // 🚀 Pass the name to our Tab Navigator cleanly
       navigation.replace('MainTabs', { userName: nameOnly });
@@ -85,6 +85,10 @@ export default function LoginScreen({ route, navigation }) {
 
         <TouchableOpacity style={style.button} onPress={handleLogin} disabled={loading}>
           {loading ? <ActivityIndicator color={COLORS.textMain} /> : <Text style={style.buttonText}>Sign In</Text>}
+        </TouchableOpacity>
+
+        <TouchableOpacity style={style.forgotLink} onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text style={style.forgotText}>Forgot password?</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={style.toggleLink} onPress={() => navigation.navigate('Register')}>
@@ -172,5 +176,14 @@ const style = StyleSheet.create({
     color: COLORS.primary, 
     fontSize: 14, 
     fontWeight: '500' 
+  },
+  forgotLink: {
+    marginTop: 14,
+    alignItems: 'center',
+  },
+  forgotText: {
+    color: COLORS.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
   },
 })

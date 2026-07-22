@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import InvestScreen from './screens/InvestScreen';
 import StockDetailScreen from './screens/StockDetailScreen';
@@ -107,6 +108,7 @@ export default function App() {
           />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
           <Stack.Screen name="MainTabs" component={MainTabNavigator} />
           <Stack.Screen
             name="Profile"
