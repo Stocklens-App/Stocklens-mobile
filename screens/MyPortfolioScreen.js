@@ -15,6 +15,18 @@ import { COLORS, SIZES } from '../theme';
 import { useAppContext } from '../context/AppContext';
 import { IP_ADDRESS } from '../context/AppContext';
 
+// Reads a fetch Response safely: tries JSON, falls back to raw text,
+// and never throws its own parse error before we can see the real message.
+async function parseResponse(res) {
+  const raw = await res.text();
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return raw; // backend sent plain text/HTML instead of JSON
+  }
+}
+
 export default function MyPortfolioScreen({ navigation }) {
   const { currentUserEmail } = useAppContext();
 
@@ -77,9 +89,13 @@ export default function MyPortfolioScreen({ navigation }) {
           avgBuyPrice: parseFloat(avgBuyPrice),
         }),
       });
-      const data = await res.json();
+      const data = await parseResponse(res);
       if (!res.ok) {
-        throw new Error(typeof data === 'string' ? data : 'Failed to add holding');
+        throw new Error(
+          typeof data === 'string'
+            ? data
+            : data?.message || data?.error || `Failed to add holding (status ${res.status})`
+        );
       }
       setModalVisible(false);
       resetForm();
@@ -106,9 +122,13 @@ export default function MyPortfolioScreen({ navigation }) {
                 `http://${IP_ADDRESS}:8081/api/portfolio?email=${encodeURIComponent(currentUserEmail)}&ticker=${encodeURIComponent(holdingTicker)}`,
                 { method: 'DELETE' }
               );
-              const data = await res.json();
+              const data = await parseResponse(res);
               if (!res.ok) {
-                throw new Error(typeof data === 'string' ? data : 'Failed to remove holding');
+                throw new Error(
+                  typeof data === 'string'
+                    ? data
+                    : data?.message || data?.error || `Failed to remove holding (status ${res.status})`
+                );
               }
               fetchPortfolio();
             } catch (err) {

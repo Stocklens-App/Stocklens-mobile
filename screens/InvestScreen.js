@@ -122,7 +122,6 @@ export default function InvestScreen({ navigation }) {
   return (
     <View style={styles.container}>
       {/* Keeps your functional text update */}
-      <Text style={styles.text}>Invest Section Coming Soon</Text>
       {/* <Text style={styles.h1}>Invest</Text> */}
       {/* <Text style={styles.subtitle}>
         Browse verified stocks on the GSE & global markets

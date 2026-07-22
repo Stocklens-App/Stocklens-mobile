@@ -1,10 +1,11 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
+import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import DashboardScreen from './screens/DashboardScreen';
@@ -21,6 +22,18 @@ import { AppProvider } from './context/AppContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+
+const AppTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: '#11141A',
+    card: '#1C212D',
+    border: '#2A3245',
+    primary: '#3478F6',
+    text: '#FFFFFF',
+  },
+};
 
 function MainTabNavigator({ navigation, route }) {
   const userName = route?.params?.userName || 'User';
@@ -77,8 +90,21 @@ function MainTabNavigator({ navigation, route }) {
 export default function App() {
   return (
     <AppProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <NavigationContainer theme={AppTheme}>
+        <Stack.Navigator
+          initialRouteName="Splash"
+          screenOptions={{
+            headerShown: false,
+            gestureEnabled: true,
+            cardStyle: { backgroundColor: '#11141A' },
+            ...TransitionPresets.SlideFromRightIOS,
+          }}
+        >
+          <Stack.Screen
+            name="Splash"
+            component={SplashScreen}
+            options={{ gestureEnabled: false, ...TransitionPresets.FadeFromBottomAndroid }}
+          />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="MainTabs" component={MainTabNavigator} />
