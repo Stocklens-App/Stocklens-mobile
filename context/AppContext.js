@@ -195,3 +195,8 @@ export function AppProvider({ children }) {
 export function useAppContext() {
   return useContext(AppContext);
 }
+
+// Backward-compat alias — pre-rewrite screens (e.g. the GSE / IndexDetailScreen)
+// still import useAppData. Same hook, old name. Safe to remove once every screen
+// has been migrated to useAppContext.
+export const useAppData = useAppContext;
