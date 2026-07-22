@@ -12,7 +12,8 @@ import {
 import axios from 'axios';
 import { IP_ADDRESS } from '../context/AppContext';
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { COLORS, SIZES } from '../theme';
+import { SIZES } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 
 const TIMEFRAMES = ['1M', '1Y'];
 const CHART_WIDTH = 320;
@@ -40,6 +41,10 @@ const initialsForBroker = (name) => {
 };
 
 export default function StockDetailScreen({ route, navigation }) {
+
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
   const { stock } = route.params;
   const [brokers, setBrokers] = useState(brokers || []);
 
@@ -59,7 +64,7 @@ useEffect(() => {
   const [activeTimeframe, setActiveTimeframe] = useState('1M');
 
   const isUp = stock.priceChangePercentage >= 0;
-  const changeColor = isUp ? COLORS.success : COLORS.error;
+  const changeColor = isUp ? colors.success : colors.error;
   const arrow = isUp ? '↑' : '↓';
 
   // Change value in currency (approx from percentage and current price)
@@ -258,10 +263,10 @@ useEffect(() => {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -274,18 +279,18 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconText: {
-    color: COLORS.textMain,
+    color: colors.textMain,
     fontSize: 26,
     lineHeight: 26,
     marginTop: -3,
   },
   starIcon: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 20,
   },
   scrollContent: {
@@ -316,12 +321,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   symbol: {
-    color: COLORS.textMain,
+    color: colors.textMain,
     fontSize: 22,
     fontWeight: '700',
   },
   subtitle: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 13,
     marginTop: 2,
   },
@@ -329,7 +334,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   price: {
-    color: COLORS.textMain,
+    color: colors.textMain,
     fontSize: 44,
     fontWeight: '700',
     fontFamily: 'Georgia',
@@ -341,7 +346,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   chartCard: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 14,
     padding: 12,
     marginBottom: 14,
@@ -354,7 +359,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeholderText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 13,
   },
   chipRow: {
@@ -367,16 +372,16 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
   },
   chipActive: {
-    backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
+    backgroundColor: colors.success,
+    borderColor: colors.success,
   },
   chipText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -402,13 +407,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   protectionTitle: {
-    color: COLORS.success,
+    color: colors.success,
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
   },
   protectionBody: {
-    color: COLORS.textMain,
+    color: colors.textMain,
     fontSize: 13,
     lineHeight: 18,
   },
@@ -416,7 +421,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   brokersCount: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '500',
     marginBottom: 12,
@@ -424,7 +429,7 @@ const styles = StyleSheet.create({
   brokerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -433,7 +438,7 @@ const styles = StyleSheet.create({
   },
   brokerRowTop: {
     borderWidth: 1.5,
-    borderColor: COLORS.success,
+    borderColor: colors.success,
   },
   brokerLogo: {
     width: 44,
@@ -452,7 +457,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   brokerName: {
-    color: COLORS.textMain,
+    color: colors.textMain,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -463,41 +468,41 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   licenseCheck: {
-    color: COLORS.success,
+    color: colors.success,
     fontSize: 11,
     fontWeight: '700',
   },
   licenseText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
   },
   topBadge: {
     borderWidth: 1,
-    borderColor: COLORS.success,
+    borderColor: colors.success,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   topBadgeText: {
-    color: COLORS.success,
+    color: colors.success,
     fontSize: 9,
     fontWeight: '700',
     letterSpacing: 0.7,
   },
   externalIcon: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 22,
     fontWeight: '400',
   },
   brokersEmpty: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: 12,
     paddingVertical: 20,
     paddingHorizontal: 14,
     alignItems: 'center',
   },
   brokersEmptyText: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 13,
   },
 });

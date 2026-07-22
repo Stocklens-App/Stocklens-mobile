@@ -7,7 +7,8 @@ import {
 import Svg, { Path, Defs, LinearGradient, Stop, Line } from 'react-native-svg';
 
 
-import { COLORS, SIZES } from '../theme';
+import { SIZES } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 import api from '../context/axios';
 import { getPriceHistory } from '../data/priceHistory';
 import { simulate } from '../logic/simulation';
@@ -52,6 +53,8 @@ function buildPath(points, w, h, pad) {
 }
 
 export default function PulseScreen() {
+  const { colors } = useTheme();
+const styles = createStyles(colors);
   // ── Live stocks from the backend (same endpoint as the Invest tab) ──
   const [stocks, setStocks] = useState([]);
   const [stocksLoading, setStocksLoading] = useState(true);
@@ -106,14 +109,14 @@ export default function PulseScreen() {
   }, [stock, amount, months, mode]);
 
   const isUp = result ? result.profit >= 0 : true;
-  const accent = isUp ? COLORS.success : COLORS.error;
+  const accent = isUp ? colors.success : colors.error;
   const chart = result ? buildPath(result.series, 300, 120, 8) : null;
 
   // ── Loading / error gates ──
   if (stocksLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.centerText}>Loading stocks…</Text>
       </View>
     );
@@ -148,7 +151,7 @@ export default function PulseScreen() {
             value={query}
             onChangeText={setQuery}
             placeholder="Search by name or symbol"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             autoCapitalize="characters"
             autoCorrect={false}
           />
@@ -217,7 +220,7 @@ export default function PulseScreen() {
             value={amountText}
             onChangeText={(t) => setAmountText(t.replace(/[^0-9.]/g, ''))}
             placeholder="0"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             keyboardType="numeric"
           />
         </View>
@@ -275,7 +278,7 @@ export default function PulseScreen() {
               </Defs>
               <Line
                 x1="8" y1={chart.firstY} x2="292" y2={chart.firstY}
-                stroke={COLORS.border} strokeWidth="1" strokeDasharray="4 4"
+                stroke={colors.border} strokeWidth="1" strokeDasharray="4 4"
               />
               <Path d={chart.area} fill="url(#fill)" />
               <Path
@@ -346,97 +349,97 @@ function Stat({ label, value }) {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: COLORS.background },
-  container: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors) => StyleSheet.create({
+  flex: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.background },
   content: { padding: SIZES.padding, paddingBottom: 48 },
 
-  center: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center', justifyContent: 'center', padding: SIZES.padding },
-  centerText: { color: COLORS.textSecondary, fontSize: 14, marginTop: 12, textAlign: 'center' },
-  retryBtn: { marginTop: 16, backgroundColor: COLORS.primary, borderRadius: SIZES.radius, paddingVertical: 10, paddingHorizontal: 24 },
+  center: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: SIZES.padding },
+  centerText: { color: colors.textSecondary, fontSize: 14, marginTop: 12, textAlign: 'center' },
+  retryBtn: { marginTop: 16, backgroundColor: colors.primary, borderRadius: SIZES.radius, paddingVertical: 10, paddingHorizontal: 24 },
   retryText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
 
   modeRow: {
-    flexDirection: 'row', backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    flexDirection: 'row', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     borderRadius: SIZES.radius, padding: 4, marginBottom: 20,
   },
   modeBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: SIZES.radius - 2 },
-  modeBtnActive: { backgroundColor: COLORS.primary },
-  modeText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' },
+  modeBtnActive: { backgroundColor: colors.primary },
+  modeText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
   modeTextActive: { color: '#FFF' },
 
-  intro: { color: COLORS.textSecondary, fontSize: 14, marginBottom: 24, lineHeight: 20 },
-  label: { color: COLORS.textMain, fontSize: 15, fontWeight: '600', marginBottom: 12 },
+  intro: { color: colors.textSecondary, fontSize: 14, marginBottom: 24, lineHeight: 20 },
+  label: { color: colors.textMain, fontSize: 15, fontWeight: '600', marginBottom: 12 },
 
   searchBox: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface,
-    borderWidth: 1, borderColor: COLORS.border, borderRadius: SIZES.radius,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
+    borderWidth: 1, borderColor: colors.border, borderRadius: SIZES.radius,
     paddingHorizontal: 12, marginBottom: 14,
   },
   searchIcon: { fontSize: 14, marginRight: 8 },
-  searchInput: { flex: 1, color: COLORS.textMain, fontSize: 15, paddingVertical: 12 },
-  searchClear: { color: COLORS.textSecondary, fontSize: 14, paddingHorizontal: 4 },
-  noMatch: { color: COLORS.textSecondary, fontSize: 14, marginBottom: 24, fontStyle: 'italic' },
+  searchInput: { flex: 1, color: colors.textMain, fontSize: 15, paddingVertical: 12 },
+  searchClear: { color: colors.textSecondary, fontSize: 14, paddingHorizontal: 4 },
+  noMatch: { color: colors.textSecondary, fontSize: 14, marginBottom: 24, fontStyle: 'italic' },
 
   pillRow: { gap: 10, paddingRight: 8, marginBottom: 24 },
   stockPill: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderWidth: 1,
-    borderColor: COLORS.border, borderRadius: SIZES.radius, paddingVertical: 8, paddingHorizontal: 12, gap: 8,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1,
+    borderColor: colors.border, borderRadius: SIZES.radius, paddingVertical: 8, paddingHorizontal: 12, gap: 8,
   },
-  stockPillActive: { borderColor: COLORS.primary },
+  stockPillActive: { borderColor: colors.primary },
   logo: { width: 28, height: 28, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   logoText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
-  pillSymbol: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
-  pillSymbolActive: { color: COLORS.textMain },
+  pillSymbol: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  pillSymbolActive: { color: colors.textMain },
 
   amountBox: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface, borderWidth: 1,
-    borderColor: COLORS.border, borderRadius: SIZES.radius, paddingHorizontal: 16, marginBottom: 12,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1,
+    borderColor: colors.border, borderRadius: SIZES.radius, paddingHorizontal: 16, marginBottom: 12,
   },
-  cedi: { color: COLORS.textSecondary, fontSize: 22, fontFamily: 'Georgia', marginRight: 6 },
-  amountInput: { flex: 1, color: COLORS.textMain, fontSize: 22, fontFamily: 'Georgia', paddingVertical: 14 },
+  cedi: { color: colors.textSecondary, fontSize: 22, fontFamily: 'Georgia', marginRight: 6 },
+  amountInput: { flex: 1, color: colors.textMain, fontSize: 22, fontFamily: 'Georgia', paddingVertical: 14 },
 
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
   quickChip: {
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     borderRadius: SIZES.radius, paddingVertical: 8, paddingHorizontal: 14,
   },
-  quickChipText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' },
+  quickChipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
 
   periodChip: {
-    flex: 1, alignItems: 'center', backgroundColor: COLORS.surface, borderWidth: 1,
-    borderColor: COLORS.border, borderRadius: SIZES.radius, paddingVertical: 12,
+    flex: 1, alignItems: 'center', backgroundColor: colors.surface, borderWidth: 1,
+    borderColor: colors.border, borderRadius: SIZES.radius, paddingVertical: 12,
   },
-  periodChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  periodText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
+  periodChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  periodText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
   periodTextActive: { color: '#FFF' },
 
   resultCard: {
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
     borderRadius: SIZES.radius, padding: SIZES.padding, marginTop: 8,
   },
   resultHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  resultHeader: { color: COLORS.textSecondary, fontSize: 13, flex: 1, paddingRight: 8 },
-  estimateTag: { backgroundColor: COLORS.primary + '22', borderRadius: 4, paddingVertical: 3, paddingHorizontal: 7 },
-  estimateTagText: { color: COLORS.primary, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  resultHeader: { color: colors.textSecondary, fontSize: 13, flex: 1, paddingRight: 8 },
+  estimateTag: { backgroundColor: colors.primary + '22', borderRadius: 4, paddingVertical: 3, paddingHorizontal: 7 },
+  estimateTagText: { color: colors.primary, fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
 
-  nowLabel: { color: COLORS.textSecondary, fontSize: 13, marginTop: 12 },
-  nowValue: { color: COLORS.textMain, fontSize: 34, fontFamily: 'Georgia', fontWeight: '700', marginTop: 2 },
+  nowLabel: { color: colors.textSecondary, fontSize: 13, marginTop: 12 },
+  nowValue: { color: colors.textMain, fontSize: 34, fontFamily: 'Georgia', fontWeight: '700', marginTop: 2 },
 
   profitBadge: { alignSelf: 'flex-start', borderRadius: 6, paddingVertical: 6, paddingHorizontal: 10, marginTop: 10 },
   profitText: { fontSize: 15, fontWeight: '700' },
 
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
   stat: { flex: 1 },
-  statLabel: { color: COLORS.textSecondary, fontSize: 12, marginBottom: 4 },
-  statValue: { color: COLORS.textMain, fontSize: 15, fontWeight: '600' },
+  statLabel: { color: colors.textSecondary, fontSize: 12, marginBottom: 4 },
+  statValue: { color: colors.textMain, fontSize: 15, fontWeight: '600' },
 
-  warnNote: { color: COLORS.textSecondary, fontSize: 11, marginTop: 14, fontStyle: 'italic' },
-  disclaimer: { color: COLORS.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 16 },
+  warnNote: { color: colors.textSecondary, fontSize: 11, marginTop: 14, fontStyle: 'italic' },
+  disclaimer: { color: colors.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 16 },
 
   emptyState: {
-    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed',
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed',
     borderRadius: SIZES.radius, padding: 28, marginTop: 8, alignItems: 'center',
   },
-  emptyText: { color: COLORS.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  emptyText: { color: colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20 },
 });

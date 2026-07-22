@@ -1,31 +1,35 @@
 import { Tabs, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity, Image, View } from 'react-native';
-
+import { useTheme } from '../context/ThemeContext';
 export default function TabsLayout() {
+
   const router = useRouter();
+
+ const { colors, darkMode } = useTheme();
 
   return (
     <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: '#10B981', // Premium Fintech Green
-        tabBarInactiveTintColor: '#6B7280', // Cool Gray
-        tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+  key={darkMode ? 'dark' : 'light'}
+  screenOptions={{
+tabBarActiveTintColor: colors.primary,
+       tabBarInactiveTintColor: colors.textSecondary,
+               tabBarStyle: {
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: '#E5E7EB',
+          borderTopColor: colors.border,
           paddingBottom: 8,
           paddingTop: 8,
           height: 60,
         },
-        headerStyle: {
-          backgroundColor: '#FFFFFF',
+       headerStyle: {
+  backgroundColor: colors.red,
           elevation: 0, // Remove shadow on Android
           shadowOpacity: 0, // Remove shadow on iOS
           borderBottomWidth: 1,
-          borderBottomColor: '#F3F4F6',
+        borderBottomColor: colors.border,
         },
-        headerTintColor: '#111827',
+       headerTintColor: colors.textMain,
         headerTitleStyle: {
           fontWeight: '700',
           fontSize: 18,
@@ -41,13 +45,13 @@ export default function TabsLayout() {
               width: 36,
               height: 36,
               borderRadius: 18,
-              backgroundColor: '#E5E7EB',
+             backgroundColor: colors.surface,
               justifyContent: 'center',
               alignItems: 'center',
               borderWidth: 1,
-              borderColor: '#10B981'
+             borderColor: colors.primary
             }}>
-              <Ionicons name="person" size={18} color="#4B5563" />
+              <Ionicons name="person" size={18} color={colors.textSecondary} />
             </View>
           </TouchableOpacity>
         ),

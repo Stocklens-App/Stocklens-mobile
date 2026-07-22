@@ -1,5 +1,11 @@
 // screens/InvestScreen.js
-import React, { useState, useEffect, useCallback } from 'react';
+
+import React, {
+  useState,
+  useEffect,
+  useCallback
+} from 'react';
+
 import {
   View,
   Text,
@@ -7,339 +13,859 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  Image,
   ActivityIndicator,
 } from 'react-native';
+
 import axios from 'axios';
-import { COLORS, SIZES } from '../theme';
+
+import { SIZES } from '../theme';
+
+import { useTheme } from '../context/ThemeContext';
+
 import { API_CONFIG } from '../context/api';
 
+
+
 export default function InvestScreen({ navigation }) {
+
+
+  const { colors } = useTheme();
+
+  const styles = createStyles(colors);
+
+
+
   const [stocks, setStocks] = useState([]);
+
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState(null);
+
   const [query, setQuery] = useState('');
 
- const fetchStocks = useCallback(async () => {
-  try {
-    setLoading(true);
-    setError(null);
 
-    const response = await axios.get(
-      API_CONFIG.BASE_URL + '/api/stocks'
-    );
 
-    setStocks(response.data || []);
 
-  } catch (err) {
-    console.log("Invest error:", err.message);
-    setError('Could not load stocks. Check your connection and try again.');
-    setStocks([]);
 
-  } finally {
-    setLoading(false);
-  }
-}, []);
+  const fetchStocks = useCallback(async () => {
+
+
+    try {
+
+
+      setLoading(true);
+
+      setError(null);
+
+
+
+      const response = await axios.get(
+        API_CONFIG.BASE_URL + '/api/stocks'
+      );
+      console.log("Invest response:", response.data);
+
+
+
+      setStocks(response.data || []);
+
+
+
+    } catch (err) {
+
+
+      console.log(
+        "Invest error:",
+        err.message
+      );
+
+
+      setError(
+        'Could not load stocks. Check your connection and try again.'
+      );
+
+
+      setStocks([]);
+
+
+
+    } finally {
+
+
+      setLoading(false);
+
+
+    }
+
+
+  }, []);
+
+
+
+
 
   useEffect(() => {
+
     fetchStocks();
+
   }, [fetchStocks]);
 
-  const visibleStocks = stocks.filter((stock) => {
-    const q = query.trim().toLowerCase();
-    if (q === '') return true;
+
+
+
+
+  const visibleStocks = stocks.filter((stock)=>{
+
+
+    const q =
+      query.trim().toLowerCase();
+
+
+
+    if(q === '') return true;
+
+
+
     return (
-      stock.name.toLowerCase().includes(q) ||
-      stock.symbol.toLowerCase().includes(q)
+
+      stock.name
+      .toLowerCase()
+      .includes(q)
+
+
+
+      ||
+
+      stock.symbol
+      .toLowerCase()
+      .includes(q)
+
     );
+
+
   });
 
-  const renderStock = ({ item }) => {
-    const isUp = item.priceChangePercentage >= 0;
-    const changeColor = isUp ? COLORS.success : COLORS.error;
-    const arrow = isUp ? '▲' : '▼';
+
+
+
+
+  const renderStock = ({item}) => {
+
+
+    const isUp =
+      item.priceChangePercentage >= 0;
+
+
+
+    const changeColor =
+      isUp
+      ?
+      colors.success
+      :
+      colors.error;
+
+
+
+    const arrow =
+      isUp
+      ?
+      '▲'
+      :
+      '▼';
+
+
+
 
     return (
+
       <TouchableOpacity
+
         style={styles.row}
+
         activeOpacity={0.6}
-        onPress={() => navigation.navigate('StockDetail', { stock: item })}
+
+        onPress={() =>
+          navigation.navigate(
+            'StockDetail',
+            {
+              stock:item
+            }
+          )
+        }
+
       >
-        <View style={[styles.logoFallback, { backgroundColor: item.logoColor || COLORS.surface }]}>
-          <Text style={styles.logoText}>{item.symbol.slice(0, 3)}</Text>
+
+
+        <View
+
+          style={[
+            styles.logoFallback,
+            {
+              backgroundColor:
+                item.logoColor ||
+                colors.surface
+            }
+          ]}
+
+        >
+
+
+          <Text style={styles.logoText}>
+
+            {item.symbol.slice(0,3)}
+
+          </Text>
+
+
         </View>
+
+
+
+
 
         <View style={styles.info}>
-          <Text style={styles.ticker}>{item.symbol}</Text>
-          <Text style={styles.name} numberOfLines={1}>
-            {item.name}
+
+
+          <Text style={styles.ticker}>
+
+            {item.symbol}
+
           </Text>
+
+
+
+          <Text
+
+            style={styles.name}
+
+            numberOfLines={1}
+
+          >
+
+            {item.name}
+
+          </Text>
+
+
+
         </View>
+
+
+
+
 
         <View style={styles.priceBox}>
-          <Text style={styles.price}>
-            ₵{item.currentPrice.toFixed(2)}
-          </Text>
-          <Text style={[styles.change, { color: changeColor }]}>
-            {arrow} {Math.abs(item.priceChangePercentage).toFixed(2)}%
-          </Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
-  const renderSkeletonRow = (_, index) => (
-    <View key={index} style={styles.row}>
-      <View style={[styles.logoFallback, styles.skeleton]} />
+
+          <Text style={styles.price}>
+
+            ₵{item.currentPrice.toFixed(2)}
+
+          </Text>
+
+
+
+
+          <Text
+
+            style={[
+              styles.change,
+              {
+                color:changeColor
+              }
+            ]}
+
+          >
+
+            {arrow}{' '}
+            {Math.abs(
+              item.priceChangePercentage
+            ).toFixed(2)}%
+
+          </Text>
+
+
+
+        </View>
+
+
+
+
+      </TouchableOpacity>
+
+
+    );
+
+
+  };                                    const renderSkeletonRow = (_, index) => (
+
+    <View
+
+      key={index}
+
+      style={styles.row}
+
+    >
+
+      <View
+
+        style={[
+          styles.logoFallback,
+          styles.skeleton
+        ]}
+
+      />
+
+
+
       <View style={styles.info}>
-        <View style={[styles.skeletonLine, { width: '40%' }]} />
-        <View style={[styles.skeletonLine, { width: '70%', marginTop: 6 }]} />
+
+
+        <View
+
+          style={[
+            styles.skeletonLine,
+            {
+              width:'40%'
+            }
+          ]}
+
+        />
+
+
+
+        <View
+
+          style={[
+            styles.skeletonLine,
+            {
+              width:'70%',
+              marginTop:6
+            }
+          ]}
+
+        />
+
+
       </View>
+
+
+
+
+
       <View style={styles.priceBox}>
-        <View style={[styles.skeletonLine, { width: 60 }]} />
-        <View style={[styles.skeletonLine, { width: 40, marginTop: 6 }]} />
+
+
+        <View
+
+          style={[
+            styles.skeletonLine,
+            {
+              width:60
+            }
+          ]}
+
+        />
+
+
+
+        <View
+
+          style={[
+            styles.skeletonLine,
+            {
+              width:40,
+              marginTop:6
+            }
+          ]}
+
+        />
+
+
       </View>
+
+
     </View>
+
+
   );
 
-  if (loading) {
+
+
+
+
+
+  if(loading){
+
+
     return (
+
       <View style={styles.container}>
-        {/* <Text style={styles.h1}>Invest</Text>
-        <Text style={styles.subtitle}>
-          Browse verified stocks on the GSE & global markets
-        </Text> */}
+
+
         <View style={styles.loadingHeader}>
-          <ActivityIndicator color={COLORS.primary} />
-          <Text style={styles.loadingText}>Loading stocks...</Text>
+
+
+          <ActivityIndicator
+
+            color={colors.primary}
+
+          />
+
+
+
+          <Text style={styles.loadingText}>
+
+            Loading stocks...
+
+          </Text>
+
+
         </View>
+
+
+
+
+
         <View style={styles.listContent}>
-          {[1, 2, 3, 4, 5].map((_, i) => renderSkeletonRow(_, i))}
+
+
+          {[1,2,3,4,5].map((_,i)=>
+
+            renderSkeletonRow(_,i)
+
+          )}
+
+
         </View>
+
+
       </View>
+
+
     );
+
+
   }
 
-  if (error) {
+
+
+
+
+
+
+  if(error){
+
+
     return (
+
       <View style={styles.container}>
-        {/* <Text style={styles.h1}>Invest</Text> */}
+
+
         <View style={styles.errorBox}>
-          <Text style={styles.errorIcon}>⚠</Text>
-          <Text style={styles.errorTitle}>Something went wrong</Text>
-          <Text style={styles.errorMessage}>{error}</Text>
+
+
+          <Text style={styles.errorIcon}>
+
+            ⚠
+
+          </Text>
+
+
+
+
+          <Text style={styles.errorTitle}>
+
+            Something went wrong
+
+          </Text>
+
+
+
+
+
+          <Text style={styles.errorMessage}>
+
+            {error}
+
+          </Text>
+
+
+
+
+
           <TouchableOpacity
+
             style={styles.retryButton}
+
             onPress={fetchStocks}
+
             activeOpacity={0.7}
+
           >
-            <Text style={styles.retryText}>Try again</Text>
+
+
+            <Text style={styles.retryText}>
+
+              Try again
+
+            </Text>
+
+
           </TouchableOpacity>
+
+
+
         </View>
+
+
       </View>
+
+
     );
+
+
   }
+
+
+
+
+
+
 
   return (
+
     <View style={styles.container}>
-      {/* <Text style={styles.h1}>Invest</Text> */}
-      {/* <Text style={styles.subtitle}>
-        Browse verified stocks on the GSE & global markets
-      </Text> */}
+
+
 
       <View style={styles.search}>
-        <Text style={styles.searchIcon}>⌕</Text>
+
+
+        <Text style={styles.searchIcon}>
+
+          ⌕
+
+        </Text>
+
+
+
+
         <TextInput
+
           style={styles.searchInput}
-          placeholder="   Search stocks"
-          placeholderTextColor={COLORS.textSecondary}
+
+         placeholder="Search stocks"
+
+          placeholderTextColor={
+            colors.textSecondary
+          }
+
           value={query}
+
           onChangeText={setQuery}
+
         />
+
+
       </View>
 
+
+
+
+
+
+
       <FlatList
+
+
         data={visibleStocks}
+
+
+
         renderItem={renderStock}
-        keyExtractor={(item) => item.id.toString()}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <Text style={styles.empty}>No stocks match your search.</Text>
+
+
+
+        keyExtractor={(item,index)=>
+
+          item.id
+
+          ?
+
+          item.id.toString()
+
+          :
+
+          index.toString()
+
         }
+
+
+
+        showsVerticalScrollIndicator={false}
+
+
+
+        contentContainerStyle={
+          styles.listContent
+        }
+
+
+
+        ListEmptyComponent={
+
+
+          <Text style={styles.empty}>
+
+            No stocks match your search.
+
+          </Text>
+
+
+        }
+
+
       />
+
+
+
     </View>
+
+
   );
+
+
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding,
+
+
+
+
+
+const createStyles = (colors) => StyleSheet.create({
+  container:{
+    flex:1,
+    backgroundColor:colors.background,
+    paddingHorizontal:SIZES.padding,
+    paddingTop:SIZES.padding,
   },
-  h1: {
-    color: COLORS.textMain,
-    fontSize: 28,
-    fontWeight: '700',
-    letterSpacing: -0.5,
+
+
+  h1:{
+    color:colors.textMain,
+    fontSize:28,
+    fontWeight:'700',
+    letterSpacing:-0.5,
   },
-  subtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    marginTop: 4,
-    marginBottom: 18,
+
+
+  subtitle:{
+    color:colors.textSecondary,
+    fontSize:13,
+    marginTop:4,
+    marginBottom:18,
   },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginBottom: 4,
+
+
+  search:{
+    flexDirection:'row',
+    alignItems:'center',
+    backgroundColor:colors.surface,
+    borderWidth:1,
+    borderColor:colors.border,
+    borderRadius:12,
+    paddingHorizontal:14,
+    paddingVertical:6,
+    marginBottom:4,
   },
-  searchIcon: {
-    color: COLORS.textSecondary,
-    fontSize: 30,
-    marginRight: 10,
+
+
+  searchIcon:{
+    color:colors.textSecondary,
+    fontSize:22,
+    marginRight:8,
   },
-  searchInput: {
-    flex: 1,
-    color: COLORS.textMain,
-    fontSize: 18,
-    padding: 0,
+
+
+  searchInput:{
+    flex:1,
+    color:colors.textMain,
+    fontSize:18,
+    padding:0,
   },
-  listContent: {
-    paddingTop: 8,
-    paddingBottom: 24,
+
+
+  listContent:{
+    paddingTop:8,
+    paddingBottom:24,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surface,
+
+
+  row:{
+    flexDirection:'row',
+    alignItems:'center',
+    paddingVertical:13,
+    borderBottomWidth:1,
+    borderBottomColor:colors.surface,
   },
-  logoWrapper: {
-    width: 44,
-    height: 44,
-    marginRight: 12,
-    borderRadius: 11,
-    overflow: 'hidden',
-    backgroundColor: COLORS.surface,
+
+
+  logoWrapper:{
+    width:44,
+    height:44,
+    marginRight:12,
+    borderRadius:11,
+    overflow:'hidden',
+    backgroundColor:colors.surface,
   },
-  logoImage: {
-    width: '100%',
-    height: '100%',
+
+
+  logoImage:{
+    width:'100%',
+    height:'100%',
   },
-  logoFallback: {
-    width: 44,
-    height: 44,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
+
+
+  logoFallback:{
+    width:44,
+    height:44,
+    borderRadius:11,
+    alignItems:'center',
+    justifyContent:'center',
   },
-  logoText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 13,
-    letterSpacing: 0.5,
+
+
+  logoText:{
+    color:'#FFFFFF',
+    fontWeight:'700',
+    fontSize:13,
+    letterSpacing:0.5,
   },
-  info: {
-    flex: 1,
-    minWidth: 0,
+
+
+  info:{
+    flex:1,
+    minWidth:0,
   },
-  ticker: {
-    color: COLORS.textMain,
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 12,
+
+
+  ticker:{
+    color:colors.textMain,
+    fontSize:15,
+    fontWeight:'600',
+    marginLeft:12,
   },
-  name: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    marginTop: 1,
-    marginLeft: 12,
+
+
+  name:{
+    color:colors.textSecondary,
+    fontSize:12,
+    marginTop:1,
+    marginLeft:12,
   },
-  priceBox: {
-    alignItems: 'flex-end',
+
+
+  priceBox:{
+    alignItems:'flex-end',
   },
-  price: {
-    color: COLORS.textMain,
-    fontSize: 15,
-    fontWeight: '600',
-    // fontFamily: 'Georgia',
-    // font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+
+  price:{
+    color:colors.textMain,
+    fontSize:15,
+    fontWeight:'600',
   },
-  change: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
+
+
+  change:{
+    fontSize:12,
+    fontWeight:'600',
+    marginTop:2,
   },
-  empty: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 40,
+
+
+  empty:{
+    color:colors.textSecondary,
+    fontSize:14,
+    textAlign:'center',
+    marginTop:40,
   },
-  loadingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 10,
+
+
+  loadingHeader:{
+    flexDirection:'row',
+    alignItems:'center',
+    justifyContent:'center',
+    paddingVertical:14,
+    gap:10,
   },
-  loadingText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
+
+
+  loadingText:{
+    color:colors.textSecondary,
+    fontSize:13,
   },
-  skeleton: {
-    backgroundColor: COLORS.surface,
-    opacity: 0.5,
+
+
+  skeleton:{
+    backgroundColor:colors.surface,
+    opacity:0.5,
   },
-  skeletonLine: {
-    height: 10,
-    backgroundColor: COLORS.surface,
-    borderRadius: 3,
-    opacity: 0.5,
+
+
+  skeletonLine:{
+    height:10,
+    backgroundColor:colors.surface,
+    borderRadius:3,
+    opacity:0.5,
   },
-  errorBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 30,
+
+
+  errorBox:{
+    flex:1,
+    alignItems:'center',
+    justifyContent:'center',
+    paddingHorizontal:30,
   },
-  errorIcon: {
-    fontSize: 48,
-    color: COLORS.error,
-    marginBottom: 12,
+
+
+  errorIcon:{
+    fontSize:48,
+    color:colors.error,
+    marginBottom:12,
   },
-  errorTitle: {
-    color: COLORS.textMain,
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
+
+
+  errorTitle:{
+    color:colors.textMain,
+    fontSize:18,
+    fontWeight:'600',
+    marginBottom:8,
   },
-  errorMessage: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
+
+
+  errorMessage:{
+    color:colors.textSecondary,
+    fontSize:14,
+    textAlign:'center',
+    marginBottom:24,
+    lineHeight:20,
   },
-  retryButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 10,
+
+
+  retryButton:{
+    backgroundColor:colors.primary,
+    paddingHorizontal:28,
+    paddingVertical:12,
+    borderRadius:10,
   },
-  retryText: {
-    color: COLORS.textMain,
-    fontSize: 14,
-    fontWeight: '600',
+
+
+  retryText:{
+    color:'#fff',
+    fontSize:14,
+    fontWeight:'600',
   },
+
+
 });

@@ -9,11 +9,14 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SIZES } from '../theme';
+import { SIZES } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 import api from '../context/axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen({ route, navigation, onLoginSuccess }) {
+  const { colors } = useTheme();
+const style = createStyles(colors);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -48,7 +51,12 @@ await AsyncStorage.setItem('token', token);
 
 if (name) {
   await AsyncStorage.setItem('userName', name);
+
+  console.log("SAVED USER NAME:", name);
+
 }
+await AsyncStorage.setItem('email', email.trim());
+console.log("SAVED EMAIL:", email.trim());
 
       console.log("LOGIN SUCCESS - TOKEN SAVED");
 
@@ -84,7 +92,7 @@ if (onLoginSuccess) {
         <TextInput
           style={[style.input, errors.includes('email') && style.errorInput]}
           placeholder="Email Address"
-          placeholderTextColor={COLORS.textSecondary}
+          placeholderTextColor={colors.textSecondary}
           value={email}
           onChangeText={(val) => {
             setEmail(val);
@@ -98,7 +106,7 @@ if (onLoginSuccess) {
           <TextInput
             style={style.passwordInput}
             placeholder="Password"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={password}
             onChangeText={(val) => {
               setPassword(val);
@@ -115,7 +123,7 @@ if (onLoginSuccess) {
             <Ionicons
               name={showPassword ? "eye-off" : "eye"}
               size={20}
-              color={COLORS.textSecondary}
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
         </View>
@@ -126,7 +134,7 @@ if (onLoginSuccess) {
           disabled={loading}
         >
           {loading
-            ? <ActivityIndicator color={COLORS.textMain} />
+            ? <ActivityIndicator color={colors.textMain} />
             : <Text style={style.buttonText}>Sign In</Text>
           }
         </TouchableOpacity>
@@ -144,10 +152,10 @@ if (onLoginSuccess) {
   );
 }
 
-const style = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: SIZES.padding
@@ -155,12 +163,12 @@ const style = StyleSheet.create({
   logoText: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: colors.primary,
     marginBottom: 8
   },
   subTitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 40,
     textAlign: 'center'
   },
@@ -169,31 +177,31 @@ const style = StyleSheet.create({
     maxWidth: 320
   },
   input: {
-    backgroundColor: COLORS.surface,
-    color: COLORS.textMain,
+    backgroundColor: colors.surface,
+    color: colors.textMain,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: SIZES.radius,
     fontSize: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.border
+    borderColor: colors.border
   },
   errorInput: {
-    borderColor: COLORS.error
+    borderColor: colors.error
   },
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: SIZES.radius,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginBottom: 16
   },
   passwordInput: {
     flex: 1,
-    color: COLORS.textMain,
+    color: colors.textMain,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16
@@ -202,14 +210,14 @@ const style = StyleSheet.create({
     paddingRight: 16
   },
   button: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: SIZES.radius,
     alignItems: 'center',
     marginTop: 10
   },
   buttonText: {
-    color: COLORS.textMain,
+    color: colors.textMain,
     fontSize: 16,
     fontWeight: '600'
   },
@@ -218,7 +226,7 @@ const style = StyleSheet.create({
     alignItems: 'center'
   },
   toggleText: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '500'
   }

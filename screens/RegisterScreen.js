@@ -10,10 +10,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
-import { COLORS, SIZES } from '../theme';
+import { SIZES } from '../theme';
+import { useTheme } from '../context/ThemeContext';
 import { API_CONFIG } from '../context/api';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function RegisterScreen({ navigation }) {
+  const { colors } = useTheme();
+const styles = createStyles(colors);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -58,7 +61,11 @@ export default function RegisterScreen({ navigation }) {
     phoneNumber: phoneNumber.trim()
   }
 );
+await AsyncStorage.setItem('userName', name.trim());
+await AsyncStorage.setItem('email', email.trim().toLowerCase());
+await AsyncStorage.setItem('phone', phoneNumber.trim());
 
+console.log("REGISTER SAVED PHONE:", phoneNumber.trim());
       navigation.navigate('Login', {
         autoEmail: email.trim().toLowerCase(),
         autoPassword: password
@@ -98,7 +105,7 @@ export default function RegisterScreen({ navigation }) {
         <TextInput
           style={[styles.input, errors.includes('name') && styles.errorInput]}
           placeholder="Full Name"
-          placeholderTextColor={COLORS.textSecondary}
+          placeholderTextColor={colors.textSecondary}
           value={name}
           onChangeText={(val) => {
             setName(val);
@@ -110,7 +117,7 @@ export default function RegisterScreen({ navigation }) {
         <TextInput
           style={[styles.input, errors.includes('email') && styles.errorInput]}
           placeholder="Email Address"
-          placeholderTextColor={COLORS.textSecondary}
+          placeholderTextColor={colors.textSecondary}
           value={email}
           onChangeText={(val) => {
             setEmail(val);
@@ -124,7 +131,7 @@ export default function RegisterScreen({ navigation }) {
         <TextInput
           style={[styles.input, errors.includes('phone') && styles.errorInput]}
           placeholder="Phone Number"
-          placeholderTextColor={COLORS.textSecondary}
+          placeholderTextColor={colors.textSecondary}
           value={phoneNumber}
           onChangeText={(val) => {
             setPhoneNumber(val);
@@ -138,7 +145,7 @@ export default function RegisterScreen({ navigation }) {
           <TextInput
             style={styles.passwordInput}
             placeholder="Password"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={password}
             onChangeText={(val) => {
               setPassword(val);
@@ -148,7 +155,7 @@ export default function RegisterScreen({ navigation }) {
             autoCapitalize="none"
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeIcon}>
-            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color={COLORS.textSecondary} />
+            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -157,7 +164,7 @@ export default function RegisterScreen({ navigation }) {
           <TextInput
             style={styles.passwordInput}
             placeholder="Confirm Password"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={confirmPassword}
             onChangeText={(val) => {
               setConfirmPassword(val);
@@ -167,7 +174,7 @@ export default function RegisterScreen({ navigation }) {
             autoCapitalize="none"
           />
           <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={styles.eyeIcon}>
-            <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color={COLORS.textSecondary} />
+            <Ionicons name={showConfirmPassword ? "eye-off" : "eye"} size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -178,7 +185,7 @@ export default function RegisterScreen({ navigation }) {
           disabled={loading}
         >
           {loading
-            ? <ActivityIndicator color={COLORS.textMain} />
+            ? <ActivityIndicator color={colors.textMain} />
             : <Text style={styles.buttonText}>Create Account</Text>}
         </TouchableOpacity>
 
@@ -197,10 +204,10 @@ export default function RegisterScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: SIZES.padding
@@ -208,12 +215,12 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: COLORS.primary,
+    color: colors.primary,
     marginBottom: 8
   },
   subTitle: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 40,
     textAlign: 'center'
   },
@@ -222,31 +229,31 @@ const styles = StyleSheet.create({
     maxWidth: 320
   },
   input: {
-    backgroundColor: COLORS.surface,
-    color: COLORS.textMain,
+    backgroundColor: colors.surface,
+    color: colors.textMain,
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: SIZES.radius,
     fontSize: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: COLORS.border
+    borderColor: colors.border
   },
   errorInput: {
-    borderColor: COLORS.error
+    borderColor: colors.error
   },
   passwordWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
+    backgroundColor: colors.surface,
     borderRadius: SIZES.radius,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
     marginBottom: 16
   },
   passwordInput: {
     flex: 1,
-    color: COLORS.textMain,
+    color: colors.textMain,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16
@@ -255,14 +262,14 @@ const styles = StyleSheet.create({
     paddingRight: 16
   },
   button: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     paddingVertical: 14,
     borderRadius: SIZES.radius,
     alignItems: 'center',
     marginTop: 10
   },
   buttonText: {
-    color: COLORS.textMain,
+    color: colors.textMain,
     fontSize: 16,
     fontWeight: '600'
   },
@@ -271,7 +278,7 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   toggleText: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontSize: 14,
     fontWeight: '500'
   }
