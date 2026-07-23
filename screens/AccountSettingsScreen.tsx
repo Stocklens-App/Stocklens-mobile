@@ -11,25 +11,39 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
-import { useAppContext } from '../context/AppContext';
-import { IP_ADDRESS } from '../context/AppContext';
+// @ts-ignore - AppContext is still a plain JS module
+import { useAppContext, IP_ADDRESS } from '../context/AppContext';
 
-export default function AccountSettingsScreen({ navigation }) {
+interface UserProfile {
+  name: string;
+  email: string;
+  [key: string]: any;
+}
+
+interface AccountSettingsScreenProps {
+  navigation: {
+    goBack: () => void;
+    reset: (config: { index: number; routes: { name: string }[] }) => void;
+    [key: string]: any;
+  };
+}
+
+export default function AccountSettingsScreen({ navigation }: AccountSettingsScreenProps) {
   const { currentUserEmail, setCurrentUserEmail } = useAppContext();
 
   // Profile fields
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [savingProfile, setSavingProfile] = useState(false);
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [savingProfile, setSavingProfile] = useState<boolean>(false);
 
   // Password fields
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [savingPassword, setSavingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState<string>('');
+  const [newPassword, setNewPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [savingPassword, setSavingPassword] = useState<boolean>(false);
 
-  const [deleting, setDeleting] = useState(false);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [deleting, setDeleting] = useState<boolean>(false);
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
 
   useEffect(() => {
     if (!currentUserEmail) {
@@ -41,12 +55,12 @@ export default function AccountSettingsScreen({ navigation }) {
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
         return res.json();
       })
-      .then((data) => {
+      .then((data: UserProfile) => {
         setName(data.name || '');
         setEmail(data.email || '');
         setLoadingProfile(false);
       })
-      .catch((err) => {
+      .catch((err: Error) => {
         console.error('Account Settings load error:', err.message);
         setLoadingProfile(false);
       });
@@ -71,7 +85,7 @@ export default function AccountSettingsScreen({ navigation }) {
       // Email may have changed — keep context in sync
       setCurrentUserEmail(email);
       Alert.alert('Success', 'Your profile has been updated.');
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert('Update failed', err.message);
     } finally {
       setSavingProfile(false);
@@ -102,7 +116,7 @@ export default function AccountSettingsScreen({ navigation }) {
       setNewPassword('');
       setConfirmPassword('');
       Alert.alert('Success', 'Your password has been changed.');
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert('Password change failed', err.message);
     } finally {
       setSavingPassword(false);
@@ -131,7 +145,7 @@ export default function AccountSettingsScreen({ navigation }) {
               }
               setCurrentUserEmail(null);
               navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
-            } catch (err) {
+            } catch (err: any) {
               Alert.alert('Delete failed', err.message);
             } finally {
               setDeleting(false);

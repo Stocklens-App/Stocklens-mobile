@@ -5,21 +5,31 @@ import axios from 'axios';
 import { COLORS, SIZES } from '../theme'; // 👈 Clean import from your shared theme
 import { IP_ADDRESS } from '../context/AppContext';
 
-export default function RegisterScreen({ navigation }) {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState([]);
+type FieldName = 'name' | 'email' | 'password' | 'phone' | 'confirm';
+
+// Lightweight navigation typing — enough to catch typos in screen names
+// without requiring a full RootStackParamList setup right now.
+type RegisterScreenProps = {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+};
+
+export default function RegisterScreen({ navigation }: RegisterScreenProps) {
+  const [name, setName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [errors, setErrors] = useState<FieldName[]>([]);
 
   // 👁️ Separate visibility toggles for each password field
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
-  const validateFields = () => {
-    let newErrors = [];
+  const validateFields = (): boolean => {
+    const newErrors: FieldName[] = [];
     if (!name) newErrors.push('name');
     if (!email) newErrors.push('email');
     if (!password) newErrors.push('password');
@@ -29,7 +39,7 @@ export default function RegisterScreen({ navigation }) {
     return newErrors.length === 0;
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (): Promise<void> => {
     if (!validateFields()) return;
     if (password !== confirmPassword) {
       Alert.alert('Error', 'Passwords do not match');
@@ -44,21 +54,21 @@ export default function RegisterScreen({ navigation }) {
         password: password,
         phoneNumber: phoneNumber.trim()
       });
-      
-      navigation.navigate('Login', { 
-        autoEmail: email.trim().toLowerCase(), 
-        autoPassword: password 
+
+      navigation.navigate('Login', {
+        autoEmail: email.trim().toLowerCase(),
+        autoPassword: password
       });
-    } catch (error) {
+    } catch (error: any) {
       console.log("🔴 Backend Raw Error Payload:", error.response?.data);
 
       if (error.response) {
         const resData = error.response.data;
-        const errorMessage = 
+        const errorMessage =
           (typeof resData === 'string' ? resData : null) ||
-          resData?.error || 
-          resData?.message || 
-          resData?.errorMessage || 
+          resData?.error ||
+          resData?.message ||
+          resData?.errorMessage ||
           'Registration validation failed.';
 
         Alert.alert('Registration Failed', errorMessage);

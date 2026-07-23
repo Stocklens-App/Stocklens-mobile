@@ -24,18 +24,17 @@ export default function LoginScreen({ route, navigation }) {
 
     setLoading(true);
     try {
-      const response = await axios.post(`http://${IP_ADDRESS}:8081/auth/login`, {
+      const response = await axios.post(`http://${IP_ADDRESS}:8081/api/users/login`, {
         email: email.trim(),
         password: password
       });
       
-      const welcomeMessage = response.data;
-      const nameOnly = welcomeMessage.split(', ')[1] || 'User';
+      const userName = response.data.name || 'User';
       
       setCurrentUserEmail(email.trim());
 
       // 🚀 Pass the name to our Tab Navigator cleanly
-      navigation.replace('MainTabs', { userName: nameOnly });
+      navigation.replace('MainTabs', { userName: userName });
     } catch (error) {
       Alert.alert('Login Failed', error.response?.data || 'Server error');
     } finally {
@@ -186,4 +185,4 @@ const style = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
   },
-})
+});

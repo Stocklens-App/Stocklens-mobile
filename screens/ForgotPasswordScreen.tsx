@@ -10,16 +10,26 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
+// @ts-ignore - AppContext is still a plain JS module
 import { IP_ADDRESS } from '../context/AppContext';
 
-export default function ForgotPasswordScreen({ navigation }) {
+interface ForgotPasswordScreenProps {
+  navigation: {
+    goBack: () => void;
+    navigate: (screen: string, params?: any) => void;
+    replace: (screen: string, params?: any) => void;
+    [key: string]: any;
+  };
+}
+
+export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) {
   // step 1 = enter email, step 2 = set new password
-  const [step, setStep] = useState(1);
-  const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<1 | 2>(1);
+  const [email, setEmail] = useState<string>('');
+  const [newPassword, setNewPassword] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleCheckEmail = async () => {
     if (!email.trim()) {
@@ -31,7 +41,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       const res = await fetch(
         `http://${IP_ADDRESS}:8081/api/users/exists?email=${encodeURIComponent(email.trim())}`
       );
-      const data = await res.json();
+      const data: { exists: boolean } = await res.json();
       if (!res.ok) throw new Error('Something went wrong. Please try again.');
 
       if (!data.exists) {
@@ -39,7 +49,7 @@ export default function ForgotPasswordScreen({ navigation }) {
         return;
       }
       setStep(2);
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert('Error', err.message);
     } finally {
       setLoading(false);
@@ -75,7 +85,7 @@ export default function ForgotPasswordScreen({ navigation }) {
       Alert.alert('Success', 'Your password has been reset. Please sign in.', [
         { text: 'OK', onPress: () => navigation.replace('Login', { autoEmail: email.trim() }) },
       ]);
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert('Reset failed', err.message);
     } finally {
       setLoading(false);

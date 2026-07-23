@@ -9,15 +9,34 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
+// @ts-ignore - AppContext is still a plain JS module
 import { useAppContext, IP_ADDRESS } from '../context/AppContext';
 
-const ICONS_BY_TYPE = {
+type NotificationType = 'SCAM_ALERT' | 'PRICE_ALERT' | 'GENERAL';
+
+interface AppNotification {
+  id: number;
+  title: string;
+  message: string;
+  type: NotificationType;
+  read: boolean;
+  createdAt?: string;
+  timestamp?: string;
+}
+
+interface IconConfig {
+  name: keyof typeof Ionicons.glyphMap;
+  color: string;
+}
+
+const ICONS_BY_TYPE: Record<NotificationType, IconConfig> = {
   SCAM_ALERT: { name: 'warning-outline', color: '#E74C3C' },
   PRICE_ALERT: { name: 'trending-up-outline', color: '#3478F6' },
   GENERAL: { name: 'notifications-outline', color: '#7E8494' },
 };
 
-function timeAgo(dateString) {
+function timeAgo(dateString?: string): string {
+  if (!dateString) return '';
   const date = new Date(dateString);
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return 'Just now';
@@ -29,11 +48,18 @@ function timeAgo(dateString) {
   return `${days}d ago`;
 }
 
-export default function NotificationsScreen({ navigation }) {
+interface NotificationsScreenProps {
+  navigation: {
+    goBack: () => void;
+    [key: string]: any;
+  };
+}
+
+export default function NotificationsScreen({ navigation }: NotificationsScreenProps) {
   const { currentUserEmail, refreshUnreadCount } = useAppContext();
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchNotifications = useCallback(() => {
     if (!currentUserEmail) {
@@ -46,11 +72,11 @@ export default function NotificationsScreen({ navigation }) {
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
         return res.json();
       })
-      .then((data) => {
+      .then((data: AppNotification[]) => {
         setNotifications(data || []);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch((err: Error) => {
         console.error('Notifications load error:', err.message);
         setError('Could not load notifications.');
         setLoading(false);
@@ -61,12 +87,12 @@ export default function NotificationsScreen({ navigation }) {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  const handleMarkAsRead = async (id) => {
+  const handleMarkAsRead = async (id: number) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     try {
       await fetch(`http://${IP_ADDRESS}:8081/api/notifications/${id}/read`, { method: 'PUT' });
       refreshUnreadCount();
-    } catch (err) {
+    } catch (err: any) {
       console.log('Mark as read error:', err.message);
     }
   };
@@ -79,12 +105,12 @@ export default function NotificationsScreen({ navigation }) {
         { method: 'PUT' }
       );
       refreshUnreadCount();
-    } catch (err) {
+    } catch (err: any) {
       console.log('Mark all read error:', err.message);
     }
   };
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({ item }: { item: AppNotification }) => {
     const icon = ICONS_BY_TYPE[item.type] || ICONS_BY_TYPE.GENERAL;
     return (
       <TouchableOpacity

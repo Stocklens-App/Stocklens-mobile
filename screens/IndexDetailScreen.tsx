@@ -10,16 +10,45 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline } from 'react-native-svg';
 import { COLORS, SIZES } from '../theme';
-import { useAppData } from '../context/AppContext';
+// @ts-ignore - AppContext is still a plain JS module
+import { useAppContext } from '../context/AppContext';
 
-const INDEX_DESCRIPTIONS = {
+type IndexSymbol = 'GSE' | 'SPX' | 'NDX' | 'UKX';
+
+const INDEX_DESCRIPTIONS: Record<string, string> = {
   GSE: 'The Ghana Stock Exchange Composite Index tracks the performance of all listed companies on the Ghana Stock Exchange (GSE), the primary stock exchange in Ghana.',
   SPX: 'The S&P 500 is a stock market index tracking the performance of 500 of the largest companies listed on stock exchanges in the United States.',
   NDX: 'The NASDAQ Composite Index includes almost all stocks listed on the NASDAQ stock exchange, heavily weighted towards technology companies.',
   UKX: 'The FTSE 100 Index is a share index of the 100 companies listed on the London Stock Exchange with the highest market capitalisation.',
 };
 
-const LargeSparkline = ({ data, color }) => {
+interface MarketIndex {
+  symbol: string;
+  name: string;
+  flag: string;
+  price: number;
+  changeValue: number;
+  changePercent: number;
+  positive: boolean;
+  sparklineData: number[];
+}
+
+interface TrendingStock {
+  ticker: string;
+  companyName: string;
+  currentPrice: number;
+  priceChangePercent: number;
+  positive: boolean;
+  logoColor: string;
+  initials: string;
+}
+
+interface LargeSparklineProps {
+  data?: number[];
+  color: string;
+}
+
+const LargeSparkline = ({ data, color }: LargeSparklineProps) => {
   if (!data || data.length === 0) return null;
   const width = 320;
   const height = 100;
@@ -50,14 +79,26 @@ const LargeSparkline = ({ data, color }) => {
   );
 };
 
-export default function IndexDetailScreen({ route, navigation }) {
+interface IndexDetailScreenProps {
+  route: {
+    params: {
+      index: MarketIndex;
+    };
+  };
+  navigation: {
+    goBack: () => void;
+    [key: string]: any;
+  };
+}
+
+export default function IndexDetailScreen({ route, navigation }: IndexDetailScreenProps) {
   const { index } = route.params;
-  const { trendingStocks } = useAppData();
+  const { trendingStocks } = useAppContext();
   const color = index.positive ? COLORS.success : COLORS.error;
   const description = INDEX_DESCRIPTIONS[index.symbol] || 'No description available.';
 
   // For GSE show real stocks from context, for others show nothing since they're not in our DB
-  const topStocks = index.symbol === 'GSE' ? trendingStocks.slice(0, 5) : [];
+  const topStocks: TrendingStock[] = index.symbol === 'GSE' ? trendingStocks.slice(0, 5) : [];
 
   return (
     <View style={styles.root}>

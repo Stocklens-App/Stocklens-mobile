@@ -12,33 +12,52 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
-import { useAppContext } from '../context/AppContext';
-import { IP_ADDRESS } from '../context/AppContext';
+// @ts-ignore - AppContext is still a plain JS module
+import { useAppContext, IP_ADDRESS } from '../context/AppContext';
 
-// Reads a fetch Response safely: tries JSON, falls back to raw text,
-// and never throws its own parse error before we can see the real message.
-async function parseResponse(res) {
-  const raw = await res.text();
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return raw; // backend sent plain text/HTML instead of JSON
-  }
+interface Holding {
+  ticker: string;
+  companyName: string;
+  sector: string;
+  logoColor: string;
+  sparklineData: number[];
+  currentPrice: number;
+  priceChangePercent: number;
+  quantity: number;
+  avgBuyPrice: number;
+  currentValue: number;
+  costBasis: number;
+  gainLossValue: number;
+  gainLossPct: number;
 }
 
-export default function MyPortfolioScreen({ navigation }) {
+interface PortfolioResponse {
+  holdings: Holding[];
+  totalValue: number;
+  totalCost: number;
+  totalGainLossValue: number;
+  totalGainLossPct: number;
+}
+
+interface MyPortfolioScreenProps {
+  navigation: {
+    goBack: () => void;
+    [key: string]: any;
+  };
+}
+
+export default function MyPortfolioScreen({ navigation }: MyPortfolioScreenProps) {
   const { currentUserEmail } = useAppContext();
 
-  const [portfolio, setPortfolio] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [portfolio, setPortfolio] = useState<PortfolioResponse | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [ticker, setTicker] = useState('');
-  const [quantity, setQuantity] = useState('');
-  const [avgBuyPrice, setAvgBuyPrice] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [ticker, setTicker] = useState<string>('');
+  const [quantity, setQuantity] = useState<string>('');
+  const [avgBuyPrice, setAvgBuyPrice] = useState<string>('');
+  const [saving, setSaving] = useState<boolean>(false);
 
   const fetchPortfolio = useCallback(() => {
     if (!currentUserEmail) {
@@ -51,11 +70,11 @@ export default function MyPortfolioScreen({ navigation }) {
         if (!res.ok) throw new Error(`Server responded with ${res.status}`);
         return res.json();
       })
-      .then((data) => {
+      .then((data: PortfolioResponse) => {
         setPortfolio(data);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch((err: Error) => {
         console.error('Portfolio load error:', err.message);
         setError('Could not load your portfolio.');
         setLoading(false);
@@ -89,25 +108,21 @@ export default function MyPortfolioScreen({ navigation }) {
           avgBuyPrice: parseFloat(avgBuyPrice),
         }),
       });
-      const data = await parseResponse(res);
+      const data = await res.json();
       if (!res.ok) {
-        throw new Error(
-          typeof data === 'string'
-            ? data
-            : data?.message || data?.error || `Failed to add holding (status ${res.status})`
-        );
+        throw new Error(typeof data === 'string' ? data : 'Failed to add holding');
       }
       setModalVisible(false);
       resetForm();
       fetchPortfolio();
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert('Add failed', err.message);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleRemoveHolding = (holdingTicker) => {
+  const handleRemoveHolding = (holdingTicker: string) => {
     Alert.alert(
       'Remove holding',
       `Remove ${holdingTicker} from your portfolio?`,
@@ -122,16 +137,12 @@ export default function MyPortfolioScreen({ navigation }) {
                 `http://${IP_ADDRESS}:8081/api/portfolio?email=${encodeURIComponent(currentUserEmail)}&ticker=${encodeURIComponent(holdingTicker)}`,
                 { method: 'DELETE' }
               );
-              const data = await parseResponse(res);
+              const data = await res.json();
               if (!res.ok) {
-                throw new Error(
-                  typeof data === 'string'
-                    ? data
-                    : data?.message || data?.error || `Failed to remove holding (status ${res.status})`
-                );
+                throw new Error(typeof data === 'string' ? data : 'Failed to remove holding');
               }
               fetchPortfolio();
-            } catch (err) {
+            } catch (err: any) {
               Alert.alert('Remove failed', err.message);
             }
           },

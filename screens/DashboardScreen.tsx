@@ -11,11 +11,47 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline } from 'react-native-svg';
 import { COLORS, SIZES } from '../theme';
+// @ts-ignore - AppContext is still a plain JS module
 import { useAppContext } from '../context/AppContext';
+
+interface TrendingStock {
+  ticker: string;
+  companyName: string;
+  currentPrice: number;
+  priceChangePercent: number;
+  positive: boolean;
+  logoColor: string;
+  initials: string;
+  sector?: string;
+  sparklineData: number[];
+}
+
+interface MarketIndex {
+  symbol: string;
+  name: string;
+  flag: string;
+  price: number;
+  changeValue: number;
+  changePercent: number;
+  positive: boolean;
+  sparklineData: number[];
+}
+
+interface StockDetailFormat {
+  id: null;
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  priceChangePercentage: number;
+  logoColor: string;
+  sector?: string;
+  history: number[];
+  verifiedBrokers: any[];
+}
 
 // --- Sparkline Component (Teammate Feature) ---
 // Maps home tab's trending stock shape to what StockDetail expects
-const toStockDetailFormat = (trending) => ({
+const toStockDetailFormat = (trending: TrendingStock): StockDetailFormat => ({
   id: null,
   symbol: trending.ticker,
   name: trending.companyName,
@@ -27,7 +63,14 @@ const toStockDetailFormat = (trending) => ({
   verifiedBrokers: [],
 });
 
-const Sparkline = ({ data, color, width = 60, height = 30 }) => {
+interface SparklineProps {
+  data?: number[];
+  color: string;
+  width?: number;
+  height?: number;
+}
+
+const Sparkline = ({ data, color, width = 60, height = 30 }: SparklineProps) => {
   if (!data || data.length === 0) return null;
   const max = Math.max(...data);
   const min = Math.min(...data);
@@ -56,11 +99,23 @@ const Sparkline = ({ data, color, width = 60, height = 30 }) => {
   );
 };
 
-export default function DashboardScreen({ route, navigation }) {
+interface DashboardScreenProps {
+  route: {
+    params?: {
+      userName?: string;
+    };
+  };
+  navigation: {
+    navigate: (screen: string, params?: any) => void;
+    [key: string]: any;
+  };
+}
+
+export default function DashboardScreen({ route, navigation }: DashboardScreenProps) {
   const rawName = route?.params?.userName || 'User';
   // Blends name formatting logic seamlessly
   const displayName = rawName.length > 12 ? `${rawName.slice(0, 12)}...` : rawName;
-  
+
   const { marketIndices, trendingStocks, scamAlerts, loading, error, unreadCount } = useAppContext();
 
   if (loading) {
@@ -130,7 +185,7 @@ export default function DashboardScreen({ route, navigation }) {
             <Text style={styles.todayLabel}>Today</Text>
           </View>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.indicesRow}>
-            {marketIndices.map((index) => {
+            {marketIndices.map((index: MarketIndex) => {
               const color = index.positive ? COLORS.success : COLORS.error;
               return (
                 <TouchableOpacity
@@ -164,7 +219,7 @@ export default function DashboardScreen({ route, navigation }) {
         </View>
 
         <View style={styles.card}>
-          {trendingStocks.slice(0, 5).map((stock, idx) => {
+          {trendingStocks.slice(0, 5).map((stock: TrendingStock, idx: number) => {
             const color = stock.positive ? COLORS.success : COLORS.error;
             return (
               <TouchableOpacity
@@ -193,7 +248,7 @@ export default function DashboardScreen({ route, navigation }) {
         </View>
 
         {/* SCAM ALERTS */}
-        {scamAlerts.map((alert, idx) => (
+        {scamAlerts.map((alert: string, idx: number) => (
           <TouchableOpacity key={idx} style={styles.scamAlert} activeOpacity={0.8}>
             <View style={styles.scamLeft}>
               <Ionicons name="warning-outline" size={20} color={COLORS.error} />
@@ -262,7 +317,7 @@ const styles = StyleSheet.create({
   scamText: { flex: 1 },
   scamLabel: { fontSize: 12, fontWeight: '700', color: COLORS.error, marginBottom: 4, letterSpacing: 0.5 },
   scamMessage: { fontSize: 12, color: COLORS.textSecondary || '#7E8494', lineHeight: 18 },
-  
+
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
   statCard: { backgroundColor: COLORS.surface || '#1C212D', padding: SIZES.padding || 16, borderRadius: 12, width: '48%', borderWidth: 1, borderColor: COLORS.border || '#2A3245' },
   statLabel: { color: COLORS.textSecondary || '#7E8494', fontSize: 11, marginBottom: 8, textTransform: 'uppercase' },
