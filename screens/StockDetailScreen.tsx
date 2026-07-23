@@ -40,12 +40,12 @@ interface Stock {
 }
 
 type StockDetailScreenProps = {
-  route: {
+  route?: {
     params: {
       stock: Stock;
     };
   };
-  navigation: {
+  navigation?: {
     goBack: () => void;
     [key: string]: any;
   };
@@ -70,7 +70,7 @@ const initialsForBroker = (name: string): string => {
 };
 
 export default function StockDetailScreen({ route, navigation }: StockDetailScreenProps) {
-  const { stock } = route.params;
+  const { stock } = route!.params;
   const [brokers, setBrokers] = useState<Broker[]>([]);
 
   useEffect(() => {
@@ -146,7 +146,7 @@ export default function StockDetailScreen({ route, navigation }: StockDetailScre
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation!.goBack()}
           activeOpacity={0.7}
         >
           <Text style={styles.iconText}>‹</Text>

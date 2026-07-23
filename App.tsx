@@ -21,6 +21,7 @@ import IndexDetailScreen from './screens/IndexDetailScreen';
 import AccountSettingsScreen from './screens/AccountSettingsScreen';
 import MyPortfolioScreen from './screens/MyPortfolioScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
+// @ts-ignore - AppContext is still a plain JS module
 import { AppProvider, useAppContext } from './context/AppContext';
 
 const Stack = createStackNavigator();
@@ -38,7 +39,16 @@ const AppTheme = {
   },
 };
 
-function MainTabNavigator({ route }) {
+interface MainTabNavigatorProps {
+  route?: {
+    params?: {
+      userName?: string;
+      [key: string]: any;
+    };
+  };
+}
+
+function MainTabNavigator({ route }: MainTabNavigatorProps) {
   const { userName: contextName } = useAppContext();
   const userName = route?.params?.userName || contextName || 'User';
 
@@ -60,7 +70,9 @@ function MainTabNavigator({ route }) {
         options={{
           headerShown: false,
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="home" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -68,7 +80,9 @@ function MainTabNavigator({ route }) {
         component={InvestScreen}
         options={{
           tabBarLabel: 'Invest',
-          tabBarIcon: ({ color, size }) => <Ionicons name="cube" size={size} color={color} />,
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="cube" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -76,7 +90,9 @@ function MainTabNavigator({ route }) {
         component={PulseScreen}
         options={{
           tabBarLabel: 'Pulse',
-          tabBarIcon: ({ color, size }) => <Ionicons name="analytics" size={size} color={color} />,
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="analytics" size={size} color={color} />
+          ),
         }}
       />
       <Tab.Screen
@@ -84,7 +100,9 @@ function MainTabNavigator({ route }) {
         component={LearnScreen}
         options={{
           headerShown: false,
-          tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />,
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="book" size={size} color={color} />
+          ),
         }}
       />
     </Tab.Navigator>

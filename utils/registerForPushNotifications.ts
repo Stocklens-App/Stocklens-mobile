@@ -1,3 +1,4 @@
+// utils/registerForPushNotifications.ts
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
@@ -17,11 +18,13 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
 // Requests permission and returns an Expo push token, or null if unavailable.
-export async function registerForPushNotificationsAsync() {
+export async function registerForPushNotificationsAsync(): Promise<string | null> {
   // Expo Go on Android (SDK 53+) no longer supports remote push notifications.
   // Attempting it anyway triggers a loud internal console.error from
   // expo-notifications, so we detect this case and bail out quietly first.
@@ -68,7 +71,7 @@ export async function registerForPushNotificationsAsync() {
       projectId ? { projectId } : undefined
     );
     return tokenResponse.data;
-  } catch (err) {
+  } catch (err: any) {
     console.log('Error getting push token:', err.message);
     return null;
   }
