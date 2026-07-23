@@ -1,7 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 // Uses explicit lowercase filename formatting match
-import LearnScreen from '../../screens/learnscreen';
+import LearnScreen from '../../screens/LearnScreen';
 
 export default function LearnTabRoute() {
   return (
