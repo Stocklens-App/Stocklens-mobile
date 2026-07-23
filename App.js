@@ -1,5 +1,6 @@
 import 'react-native-gesture-handler';
 import React from 'react';
+import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import VerifyOtpScreen from './screens/VerifyOtpScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import InvestScreen from './screens/InvestScreen';
@@ -19,7 +21,7 @@ import IndexDetailScreen from './screens/IndexDetailScreen';
 import AccountSettingsScreen from './screens/AccountSettingsScreen';
 import MyPortfolioScreen from './screens/MyPortfolioScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
-import { AppProvider } from './context/AppContext';
+import { AppProvider, useAppContext } from './context/AppContext';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -36,8 +38,9 @@ const AppTheme = {
   },
 };
 
-function MainTabNavigator({ navigation, route }) {
-  const userName = route?.params?.userName || 'User';
+function MainTabNavigator({ route }) {
+  const { userName: contextName } = useAppContext();
+  const userName = route?.params?.userName || contextName || 'User';
 
   return (
     <Tab.Navigator
@@ -88,27 +91,31 @@ function MainTabNavigator({ navigation, route }) {
   );
 }
 
-export default function App() {
+function RootNavigator() {
+  const { token, booting } = useAppContext();
+
+  // Still reading the stored session — don't decide anything yet, or a
+  // returning user sees the login screen flash before landing on Home.
+  if (booting) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#11141A', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color="#3478F6" />
+      </View>
+    );
+  }
+
   return (
-    <AppProvider>
-      <NavigationContainer theme={AppTheme}>
-        <Stack.Navigator
-          initialRouteName="Splash"
-          screenOptions={{
-            headerShown: false,
-            gestureEnabled: true,
-            cardStyle: { backgroundColor: '#11141A' },
-            ...TransitionPresets.SlideFromRightIOS,
-          }}
-        >
-          <Stack.Screen
-            name="Splash"
-            component={SplashScreen}
-            options={{ gestureEnabled: false, ...TransitionPresets.FadeFromBottomAndroid }}
-          />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: true,
+        cardStyle: { backgroundColor: '#11141A' },
+        ...TransitionPresets.SlideFromRightIOS,
+      }}
+    >
+      {token ? (
+        // ── Signed in ──
+        <>
           <Stack.Screen name="MainTabs" component={MainTabNavigator} />
           <Stack.Screen
             name="Profile"
@@ -120,32 +127,35 @@ export default function App() {
               headerTintColor: '#3478F6',
             }}
           />
+          <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
+          <Stack.Screen name="MyPortfolio" component={MyPortfolioScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="IndexDetail" component={IndexDetailScreen} options={{ title: 'Index Details' }} />
+          <Stack.Screen name="StockDetail" component={StockDetailScreen} />
+        </>
+      ) : (
+        // ── Signed out ──
+        <>
           <Stack.Screen
-            name="AccountSettings"
-            component={AccountSettingsScreen}
-            options={{ headerShown: false }}
+            name="Splash"
+            component={SplashScreen}
+            options={{ gestureEnabled: false, ...TransitionPresets.FadeFromBottomAndroid }}
           />
-          <Stack.Screen
-            name="MyPortfolio"
-            component={MyPortfolioScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Notifications"
-            component={NotificationsScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="IndexDetail"
-            component={IndexDetailScreen}
-            options={{ headerShown: false, title: 'Index Details' }}
-          />
-          <Stack.Screen
-            name="StockDetail"
-            component={StockDetailScreen}
-            options={{ headerShown: false }}
-          />
-        </Stack.Navigator>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="VerifyOtp" component={VerifyOtpScreen} />
+          <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <NavigationContainer theme={AppTheme}>
+        <RootNavigator />
       </NavigationContainer>
     </AppProvider>
   );

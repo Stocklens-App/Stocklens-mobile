@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 import { COLORS, SIZES } from '../theme'; // 👈 Clean import from your shared theme
-import { IP_ADDRESS } from '../context/AppContext';
+import { api } from '../context/AppContext';
 
 type FieldName = 'name' | 'email' | 'password' | 'phone' | 'confirm';
 
@@ -48,17 +47,15 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 
     setLoading(true);
     try {
-      await axios.post(`http://${IP_ADDRESS}:8081/auth/register`, {
+      await api.post('/auth/register', {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password: password,
         phoneNumber: phoneNumber.trim()
       });
 
-      navigation.navigate('Login', {
-        autoEmail: email.trim().toLowerCase(),
-        autoPassword: password
-      });
+      // Account created but unverified — go enter the emailed code.
+      navigation.navigate('VerifyOtp', { email: email.trim().toLowerCase() });
     } catch (error: any) {
       console.log("🔴 Backend Raw Error Payload:", error.response?.data);
 

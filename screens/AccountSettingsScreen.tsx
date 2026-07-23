@@ -12,13 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
 // @ts-ignore - AppContext is still a plain JS module
-import { useAppContext, IP_ADDRESS } from '../context/AppContext';
-
-interface UserProfile {
-  name: string;
-  email: string;
-  [key: string]: any;
-}
+import { useAppContext, api } from '../context/AppContext';
 
 interface AccountSettingsScreenProps {
   navigation: {
@@ -29,7 +23,7 @@ interface AccountSettingsScreenProps {
 }
 
 export default function AccountSettingsScreen({ navigation }: AccountSettingsScreenProps) {
-  const { currentUserEmail, setCurrentUserEmail } = useAppContext();
+  const { token, signOut } = useAppContext();
 
   // Profile fields
   const [name, setName] = useState<string>('');
@@ -46,25 +40,24 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
   const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
 
   useEffect(() => {
-    if (!currentUserEmail) {
+    if (!token) {
       setLoadingProfile(false);
       return;
     }
-    fetch(`http://${IP_ADDRESS}:8081/api/users/profile?email=${encodeURIComponent(currentUserEmail)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-        return res.json();
-      })
-      .then((data: UserProfile) => {
+    api.get('/api/users/profile')
+      .then(({ data }) => {
         setName(data.name || '');
         setEmail(data.email || '');
         setLoadingProfile(false);
       })
-      .catch((err: Error) => {
+      .catch((err: any) => {
         console.error('Account Settings load error:', err.message);
         setLoadingProfile(false);
       });
-  }, [currentUserEmail]);
+  }, [token]);
+
+  const errorFrom = (err: any, fallback: string) =>
+    err.response?.data?.error || err.response?.data?.message || fallback;
 
   const handleSaveProfile = async () => {
     if (!name.trim() || !email.trim()) {
@@ -73,20 +66,14 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
     }
     setSavingProfile(true);
     try {
-      const res = await fetch(`http://${IP_ADDRESS}:8081/api/users/profile`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentEmail: currentUserEmail, name, email }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(typeof data === 'string' ? data : 'Failed to update profile');
-      }
-      // Email may have changed — keep context in sync
-      setCurrentUserEmail(email);
-      Alert.alert('Success', 'Your profile has been updated.');
+      await api.put('/api/users/profile', { name, email });
+      Alert.alert(
+        'Success',
+        'Your profile has been updated. Please sign in again for the change to take effect.',
+        [{ text: 'OK', onPress: signOut }]
+      );
     } catch (err: any) {
-      Alert.alert('Update failed', err.message);
+      Alert.alert('Update failed', errorFrom(err, 'Failed to update profile'));
     } finally {
       setSavingProfile(false);
     }
@@ -103,21 +90,13 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
     }
     setSavingPassword(true);
     try {
-      const res = await fetch(`http://${IP_ADDRESS}:8081/api/users/password`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUserEmail, currentPassword, newPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(typeof data === 'string' ? data : 'Failed to change password');
-      }
+      await api.put('/api/users/password', { currentPassword, newPassword });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       Alert.alert('Success', 'Your password has been changed.');
     } catch (err: any) {
-      Alert.alert('Password change failed', err.message);
+      Alert.alert('Password change failed', errorFrom(err, 'Failed to change password'));
     } finally {
       setSavingPassword(false);
     }
@@ -135,18 +114,11 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
           onPress: async () => {
             setDeleting(true);
             try {
-              const res = await fetch(
-                `http://${IP_ADDRESS}:8081/api/users/profile?email=${encodeURIComponent(currentUserEmail)}`,
-                { method: 'DELETE' }
-              );
-              const data = await res.json();
-              if (!res.ok) {
-                throw new Error(typeof data === 'string' ? data : 'Failed to delete account');
-              }
-              setCurrentUserEmail(null);
-              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+              await api.delete('/api/users/profile');
+              // Clearing the token returns us to the signed-out stack automatically.
+              await signOut();
             } catch (err: any) {
-              Alert.alert('Delete failed', err.message);
+              Alert.alert('Delete failed', errorFrom(err, 'Failed to delete account'));
             } finally {
               setDeleting(false);
             }
