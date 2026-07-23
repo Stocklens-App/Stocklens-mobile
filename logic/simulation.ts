@@ -1,4 +1,4 @@
-// logic/simulation.js
+// logic/simulation.ts
 // Pure simulation logic for the Pulse tab. No React, no UI — just math.
 // Both modes take a DATED series ([{date, price}], oldest → newest) and
 // return the SAME result shape, so one renderer can draw either one.
@@ -10,12 +10,32 @@
 //     annualRate,    // decimal, 0.18 = 18%/yr
 //     band }         // forecast only: { low, typical, high } end values
 
+import { PricePoint } from '../data/priceHistory';
+
 const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000;
-const yearsBetween = (a, b) =>
+const yearsBetween = (a: string, b: string): number =>
   (new Date(b).getTime() - new Date(a).getTime()) / MS_PER_YEAR;
 
+export interface SimulationResult {
+  mode: 'backtest' | 'forecast';
+  isEstimate: boolean;
+  series: { date: string; value: number }[];
+  startValue: number;
+  endValue: number;
+  profit: number;
+  returnPct: number;
+  shares: number | null;
+  annualRate: number;
+  band: { low: number; typical: number; high: number } | null;
+  truncated?: boolean;
+}
+
+export interface ForecastOptions {
+  spread?: number;
+}
+
 // Compound annual growth rate implied by a dated series.
-export function historicalCAGR(series) {
+export function historicalCAGR(series: PricePoint[]): number {
   if (!series || series.length < 2) return 0;
   const first = series[0];
   const last = series[series.length - 1];
@@ -25,7 +45,11 @@ export function historicalCAGR(series) {
 }
 
 // BACKTEST — "what WOULD have happened." Real prices, past → now.
-export function runBacktest(series, amount, holdMonths) {
+export function runBacktest(
+  series: PricePoint[],
+  amount: number,
+  holdMonths: number
+): SimulationResult | null {
   if (!series || series.length < 2 || !amount || amount <= 0) return null;
 
   const last = series[series.length - 1]; // today
@@ -64,7 +88,12 @@ export function runBacktest(series, amount, holdMonths) {
 // FORECAST — "what MIGHT happen." An estimate, now → future.
 // Grows the money at the stock's own historical rate, and shows a RANGE
 // so it never reads as a promise.
-export function runForecast(series, amount, holdMonths, options = {}) {
+export function runForecast(
+  series: PricePoint[],
+  amount: number,
+  holdMonths: number,
+  options: ForecastOptions = {}
+): SimulationResult | null {
   if (!series || series.length < 2 || !amount || amount <= 0) return null;
 
   const base = historicalCAGR(series);
@@ -72,13 +101,13 @@ export function runForecast(series, amount, holdMonths, options = {}) {
   const rates = { low: base - spread, typical: base, high: base + spread };
 
   const years = holdMonths / 12;
-  const project = (r) => amount * Math.pow(1 + r, years);
+  const project = (r: number) => amount * Math.pow(1 + r, years);
   const endValue = project(rates.typical);
 
   const last = series[series.length - 1];
   const start = new Date(last.date);
   const monthlyRate = Math.pow(1 + rates.typical, 1 / 12) - 1;
-  const seriesOut = [];
+  const seriesOut: { date: string; value: number }[] = [];
   for (let m = 0; m <= holdMonths; m++) {
     const d = new Date(start.getFullYear(), start.getMonth() + m, 1);
     seriesOut.push({
@@ -103,7 +132,13 @@ export function runForecast(series, amount, holdMonths, options = {}) {
 }
 
 // Convenience dispatcher.
-export function simulate(mode, series, amount, holdMonths, options) {
+export function simulate(
+  mode: 'backtest' | 'forecast',
+  series: PricePoint[],
+  amount: number,
+  holdMonths: number,
+  options?: ForecastOptions
+): SimulationResult | null {
   return mode === 'forecast'
     ? runForecast(series, amount, holdMonths, options)
     : runBacktest(series, amount, holdMonths);

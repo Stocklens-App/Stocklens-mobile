@@ -1,4 +1,4 @@
-// data/priceHistory.js
+// data/priceHistory.ts
 // Dated monthly price history for the Pulse simulator.
 // Each point is { date: 'YYYY-MM-DD', price }, oldest → newest.
 // The LAST point is "today". Keyed by ticker to match your /api/stocks list.
@@ -7,8 +7,21 @@
 // to answer "held for 6 months" correctly and to compute an annual growth
 // rate for the forecast. Array positions can't do that.
 
+export interface PricePoint {
+  date: string;
+  price: number;
+}
+
+export interface StockLike {
+  ticker?: string;
+  symbol?: string;
+  history?: number[];
+  currentPrice?: number;
+  [key: string]: any;
+}
+
 // Stamps monthly dates onto a list of prices, ending on the current month.
-function buildMonthly(prices) {
+function buildMonthly(prices: number[]): PricePoint[] {
   const n = prices.length;
   const now = new Date();
   return prices.map((price, i) => {
@@ -20,7 +33,7 @@ function buildMonthly(prices) {
 
 // 1. Authored series for your 10 live stocks (13 points = 12 months → today).
 //    Keyed by TICKER. Each has its own little story so the demo looks alive.
-export const PRICE_HISTORY = {
+export const PRICE_HISTORY: Record<string, PricePoint[]> = {
   // ⚠️ MTNG + GCB: I didn't have their current prices from the backend, so the
   //    last number in each is a placeholder — change it to match your DB if you
   //    ever show the raw share price. (It doesn't affect the profit math; see note.)
@@ -39,21 +52,21 @@ export const PRICE_HISTORY = {
 
 // 2. Fallback: build dated history for any stock we didn't hand-write,
 //    from its existing bare sparkline + currentPrice.
-export function generateFromBare(bareHistory = [], currentPrice) {
+export function generateFromBare(bareHistory: number[] = [], currentPrice?: number): PricePoint[] {
   const src =
     Array.isArray(bareHistory) && bareHistory.length >= 2
       ? [...bareHistory]
-      : [currentPrice, currentPrice];
+      : [currentPrice as number, currentPrice as number];
   if (currentPrice != null) src[src.length - 1] = currentPrice; // keep "today" consistent
   return buildMonthly(src);
 }
 
 // 3. The ONE function Pulse calls. Uses ticker OR symbol so it works whether
 //    your DTO exposes `ticker` or maps it to `symbol`.
-export function getPriceHistory(stock) {
+export function getPriceHistory(stock: StockLike): PricePoint[] {
   if (!stock) return [];
   const key = stock.ticker || stock.symbol;
-  const authored = PRICE_HISTORY[key];
+  const authored = key ? PRICE_HISTORY[key] : undefined;
   if (authored && authored.length >= 2) return authored;
   return generateFromBare(stock.history, stock.currentPrice);
 }
