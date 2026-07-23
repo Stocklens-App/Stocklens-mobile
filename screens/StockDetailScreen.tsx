@@ -1,4 +1,4 @@
-// screens/StockDetailScreen.js
+// screens/StockDetailScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -14,15 +14,45 @@ import { IP_ADDRESS } from '../context/AppContext';
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { COLORS, SIZES } from '../theme';
 
-const TIMEFRAMES = ['1M', '1Y'];
+const TIMEFRAMES = ['1M', '1Y'] as const;
+type Timeframe = typeof TIMEFRAMES[number];
+
 const CHART_WIDTH = 320;
 const CHART_HEIGHT = 160;
 
 // Color palette for auto-generated broker logos
 const BROKER_COLORS = ['#3478F6', '#FF4D4D', '#1C1C1E', '#9B59B6', '#F5A623', '#00C896'];
 
+interface Broker {
+  id: string | number;
+  name: string;
+  deepLink: string;
+}
+
+interface Stock {
+  symbol: string;
+  name: string;
+  sector?: string;
+  currentPrice: number;
+  priceChangePercentage: number;
+  logoColor?: string;
+  history?: number[];
+}
+
+type StockDetailScreenProps = {
+  route: {
+    params: {
+      stock: Stock;
+    };
+  };
+  navigation: {
+    goBack: () => void;
+    [key: string]: any;
+  };
+};
+
 // Simple hash to pick a color deterministically from a broker's name
-const colorForBroker = (name) => {
+const colorForBroker = (name: string): string => {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -31,7 +61,7 @@ const colorForBroker = (name) => {
 };
 
 // Extract 2-letter initials from broker name
-const initialsForBroker = (name) => {
+const initialsForBroker = (name: string): string => {
   const words = name.trim().split(/\s+/);
   if (words.length >= 2) {
     return (words[0][0] + words[1][0]).toUpperCase();
@@ -39,24 +69,25 @@ const initialsForBroker = (name) => {
   return name.slice(0, 2).toUpperCase();
 };
 
-export default function StockDetailScreen({ route, navigation }) {
+export default function StockDetailScreen({ route, navigation }: StockDetailScreenProps) {
   const { stock } = route.params;
-  const [brokers, setBrokers] = useState(brokers || []);
+  const [brokers, setBrokers] = useState<Broker[]>([]);
 
-useEffect(() => {
-  // If brokers came pre-loaded (from Invest tab), skip fetching
-  if (brokers && brokers.length > 0) return;
+  useEffect(() => {
+    // If brokers came pre-loaded (from Invest tab), skip fetching
+    if (brokers && brokers.length > 0) return;
 
-  // Otherwise, fetch fresh data using the ticker (symbol)
-  axios.get(`http://${IP_ADDRESS}:8081/api/stocks/by-ticker/${stock.symbol}`)
-    .then(response => {
-      setBrokers(response.data.verifiedBrokers || []);
-    })
-    .catch(() => {
-      // Silent fail - brokers section will show empty
-    });
-}, [stock.symbol]);
-  const [activeTimeframe, setActiveTimeframe] = useState('1M');
+    // Otherwise, fetch fresh data using the ticker (symbol)
+    axios.get(`http://${IP_ADDRESS}:8081/api/stocks/by-ticker/${stock.symbol}`)
+      .then(response => {
+        setBrokers(response.data.verifiedBrokers || []);
+      })
+      .catch(() => {
+        // Silent fail - brokers section will show empty
+      });
+  }, [stock.symbol]);
+
+  const [activeTimeframe, setActiveTimeframe] = useState<Timeframe>('1M');
 
   const isUp = stock.priceChangePercentage >= 0;
   const changeColor = isUp ? COLORS.success : COLORS.error;
@@ -94,7 +125,7 @@ useEffect(() => {
 
   const chartData = buildChartData();
 
-  const openBrokerLink = async (url) => {
+  const openBrokerLink = async (url: string): Promise<void> => {
     try {
       const supported = await Linking.canOpenURL(url);
       if (supported) {

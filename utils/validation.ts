@@ -11,7 +11,7 @@ export const MAX_PASSWORD_LENGTH = 64;
 
 /** Each validator returns an error message, or null when the value is fine. */
 
-export function validateName(value) {
+export function validateName(value: string | null | undefined): string | null {
   const v = (value || '').trim();
   if (!v) return 'Name is required.';
   if (!NAME_REGEX.test(v)) {
@@ -20,7 +20,7 @@ export function validateName(value) {
   return null;
 }
 
-export function validateEmail(value) {
+export function validateEmail(value: string | null | undefined): string | null {
   const v = (value || '').trim();
   if (!v) return 'Email address is required.';
   if (v.length > 254) return 'That email address is too long.';
@@ -28,14 +28,14 @@ export function validateEmail(value) {
   return null;
 }
 
-export function validatePhone(value) {
+export function validatePhone(value: string | null | undefined): string | null {
   const v = (value || '').trim();
   if (!v) return 'Phone number is required.';
   if (!PHONE_REGEX.test(v)) return 'Enter a 10-digit number starting with 0, e.g. 0245173765';
   return null;
 }
 
-export function validatePassword(value) {
+export function validatePassword(value: string | null | undefined): string | null {
   const v = (value || '').trim();
   if (!v) return 'Password is required.';
   if (v.length < MIN_PASSWORD_LENGTH) return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
@@ -43,7 +43,7 @@ export function validatePassword(value) {
   return null;
 }
 
-export function validateOtp(value) {
+export function validateOtp(value: string | null | undefined): string | null {
   const v = (value || '').trim();
   if (!v) return 'Enter the code from your email.';
   if (!OTP_REGEX.test(v)) return 'The code is 6 digits.';
@@ -51,5 +51,8 @@ export function validateOtp(value) {
 }
 
 /** Strips characters that aren't allowed, for use in onChangeText. */
-export const sanitizeName = (v) => (v || '').replace(/[^A-Za-zÀ-ÿ'\-. ]/g, '').slice(0, 50);
-export const sanitizeDigits = (v, max) => (v || '').replace(/[^0-9]/g, '').slice(0, max);
+export const sanitizeName = (v: string | null | undefined): string =>
+  (v || '').replace(/[^A-Za-zÀ-ÿ'\-. ]/g, '').slice(0, 50);
+
+export const sanitizeDigits = (v: string | null | undefined, max: number): string =>
+  (v || '').replace(/[^0-9]/g, '').slice(0, max);

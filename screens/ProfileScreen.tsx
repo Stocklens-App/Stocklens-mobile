@@ -1,11 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Switch, ActivityIndicator, ScrollView } from 'react-native';
-import { COLORS, SIZES } from '../theme'; 
+import { COLORS, SIZES } from '../theme';
+// @ts-ignore - AppContext is still a plain JS module
 import { useAppContext, api } from '../context/AppContext';
 
-export default function ProfileScreen({ navigation }) {
-  const [userData, setUserData] = useState(null);
-  const [loading, setLoading] = useState(true);
+interface UserData {
+  name?: string;
+  email?: string;
+  modulesCompleted?: number;
+  streakDays?: number;
+  portfolioValue?: number;
+  portfolioReturnPct?: number;
+}
+
+type ProfileScreenProps = {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+};
+
+export default function ProfileScreen({ navigation }: ProfileScreenProps) {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const { token, notificationsEnabled, toggleNotifications, signOut } = useAppContext();
 
   useEffect(() => {
@@ -14,19 +30,19 @@ export default function ProfileScreen({ navigation }) {
       return;
     }
     api.get('/api/users/profile')
-      .then(({ data }) => {
+      .then(({ data }: { data: UserData }) => {
         setUserData(data);
         setLoading(false);
       })
-      .catch((err) => {
+      .catch((err: any) => {
         console.error('Profile load error:', err.message);
         setLoading(false);
       });
   }, [token]);
 
   const totalModules = 80;
-  const progressPercent = userData?.modulesCompleted 
-    ? (userData.modulesCompleted / totalModules) * 100 
+  const progressPercent = userData?.modulesCompleted
+    ? (userData.modulesCompleted / totalModules) * 100
     : 0;
 
   if (loading) {
@@ -46,7 +62,7 @@ export default function ProfileScreen({ navigation }) {
             <Text style={style.avatarText}>{userData?.name ? userData.name[0] : 'U'}</Text>
           </View>
           <Text style={style.name}>{userData?.name}</Text>
-          
+
           <Text style={style.email}>{userData?.email}</Text>
         </View>
 
@@ -57,7 +73,7 @@ export default function ProfileScreen({ navigation }) {
             <Text style={style.cardMetricValue}>{userData?.modulesCompleted} / {totalModules}</Text>
           </View>
           <Text style={style.subTextLabel}>Modules Completed</Text>
-          
+
           <View style={style.progressBarTrack}>
             <View style={[style.progressBarFill, { width: `${progressPercent}%` }]} />
           </View>
@@ -112,8 +128,8 @@ export default function ProfileScreen({ navigation }) {
 
         {/* Logout Button — clearing the token swaps the navigator back to the
             signed-out stack on its own, so there's no navigate call here. */}
-        <TouchableOpacity 
-          style={style.logoutButton} 
+        <TouchableOpacity
+          style={style.logoutButton}
           onPress={signOut}
         >
           <Text style={style.logoutText}>Log Out Account</Text>
@@ -124,152 +140,152 @@ export default function ProfileScreen({ navigation }) {
 }
 
 const style = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: COLORS.background 
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background
   },
-  center: { 
-    justifyContent: 'center', 
-    alignItems: 'center' 
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-  scrollContent: { 
-    paddingHorizontal: SIZES.padding || 20, 
-    paddingBottom: 40 
+  scrollContent: {
+    paddingHorizontal: SIZES.padding || 20,
+    paddingBottom: 40
   },
-  profileSection: { 
-    alignItems: 'center', 
-    marginVertical: 20 
+  profileSection: {
+    alignItems: 'center',
+    marginVertical: 20
   },
-  avatar: { 
-    width: 100, 
-    height: 100, 
-    borderRadius: 50, 
-    backgroundColor: COLORS.primary || '#2F80ED', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginBottom: 16 
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: COLORS.primary || '#2F80ED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16
   },
-  avatarText: { 
-    color: COLORS.textMain, 
-    fontSize: 44, 
-    fontWeight: 'bold' 
+  avatarText: {
+    color: COLORS.textMain,
+    fontSize: 44,
+    fontWeight: 'bold'
   },
-  name: { 
-    color: COLORS.textMain, 
-    fontSize: 24, 
-    fontWeight: 'bold' 
+  name: {
+    color: COLORS.textMain,
+    fontSize: 24,
+    fontWeight: 'bold'
   },
-  username: { 
-    color: COLORS.textSecondary, 
-    fontSize: 16, 
-    marginTop: 4 
+  username: {
+    color: COLORS.textSecondary,
+    fontSize: 16,
+    marginTop: 4
   },
-  email: { 
-    color: COLORS.textSecondary, 
-    fontSize: 14, 
-    marginTop: 2 
+  email: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginTop: 2
   },
-  card: { 
-    backgroundColor: '#161C26', 
-    borderRadius: SIZES.radius || 16, 
-    padding: 18, 
-    marginBottom: 16 
+  card: {
+    backgroundColor: '#161C26',
+    borderRadius: SIZES.radius || 16,
+    padding: 18,
+    marginBottom: 16
   },
-  cardHeaderRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center' 
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
-  cardTitle: { 
-    color: COLORS.textSecondary, 
-    fontSize: 12, 
-    fontWeight: 'bold', 
-    letterSpacing: 1 
+  cardTitle: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 1
   },
-  cardMetricValue: { 
-    color: COLORS.textMain, 
-    fontSize: 18, 
-    fontWeight: 'bold' 
+  cardMetricValue: {
+    color: COLORS.textMain,
+    fontSize: 18,
+    fontWeight: 'bold'
   },
-  subTextLabel: { 
-    color: '#56667A', 
-    fontSize: 12, 
-    marginTop: 2 
+  subTextLabel: {
+    color: '#56667A',
+    fontSize: 12,
+    marginTop: 2
   },
-  progressBarTrack: { 
-    height: 6, 
-    backgroundColor: '#263143', 
-    borderRadius: 3, 
-    marginVertical: 12 
+  progressBarTrack: {
+    height: 6,
+    backgroundColor: '#263143',
+    borderRadius: 3,
+    marginVertical: 12
   },
-  progressBarFill: { 
-    height: 6, 
-    backgroundColor: COLORS.textMain, 
-    borderRadius: 3 
+  progressBarFill: {
+    height: 6,
+    backgroundColor: COLORS.textMain,
+    borderRadius: 3
   },
-  streakRow: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginTop: 8 
+  streakRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8
   },
-  streakIcon: { 
-    fontSize: 24, 
-    marginRight: 12 
+  streakIcon: {
+    fontSize: 24,
+    marginRight: 12
   },
-  streakText: { 
-    color: COLORS.textMain, 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  streakText: {
+    color: COLORS.textMain,
+    fontSize: 16,
+    fontWeight: 'bold'
   },
-  portfolioRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginTop: 8 
+  portfolioRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8
   },
-  portfolioValue: { 
-    color: COLORS.textMain, 
-    fontSize: 24, 
-    fontWeight: 'bold' 
+  portfolioValue: {
+    color: COLORS.textMain,
+    fontSize: 24,
+    fontWeight: 'bold'
   },
-  portfolioReturn: { 
-    color: '#27AE60', 
-    fontSize: 14, 
-    fontWeight: '600', 
-    marginTop: 4 
+  portfolioReturn: {
+    color: '#27AE60',
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 4
   },
-  sparklineGraphic: { 
-    fontSize: 32 
+  sparklineGraphic: {
+    fontSize: 32
   },
-  actionRow: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    backgroundColor: '#161C26', 
-    borderRadius: SIZES.radius || 16, 
-    padding: 18, 
-    marginBottom: 12 
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#161C26',
+    borderRadius: SIZES.radius || 16,
+    padding: 18,
+    marginBottom: 12
   },
-  actionText: { 
-    color: COLORS.textMain, 
-    fontSize: 16, 
-    fontWeight: '500' 
+  actionText: {
+    color: COLORS.textMain,
+    fontSize: 16,
+    fontWeight: '500'
   },
-  chevron: { 
-    color: '#56667A', 
-    fontSize: 14 
+  chevron: {
+    color: '#56667A',
+    fontSize: 14
   },
-  logoutButton: { 
-    backgroundColor: COLORS.error, 
-    paddingVertical: 14, 
-    borderRadius: SIZES.radius || 16, 
-    width: '100%', 
+  logoutButton: {
+    backgroundColor: COLORS.error,
+    paddingVertical: 14,
+    borderRadius: SIZES.radius || 16,
+    width: '100%',
     alignItems: 'center',
     marginTop: 20
   },
-  logoutText: { 
-    color: COLORS.textMain, 
-    fontSize: 16, 
-    fontWeight: '600' 
+  logoutText: {
+    color: COLORS.textMain,
+    fontSize: 16,
+    fontWeight: '600'
   }
 });

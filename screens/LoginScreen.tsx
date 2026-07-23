@@ -2,18 +2,33 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme'; // 👈 Centralized styling design tokens
+// @ts-ignore - AppContext is still a plain JS module
 import { useAppContext, api } from '../context/AppContext';
 import { validateEmail } from '../utils/validation';
 
-export default function LoginScreen({ route, navigation }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState([]);
+type FieldName = 'email' | 'password';
+
+type LoginScreenProps = {
+  route?: {
+    params?: {
+      autoEmail?: string;
+      autoPassword?: string;
+    };
+  };
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+};
+
+export default function LoginScreen({ route, navigation }: LoginScreenProps) {
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [errors, setErrors] = useState<FieldName[]>([]);
   const { signIn } = useAppContext();
 
-  const handleLogin = async () => {
+  const handleLogin = async (): Promise<void> => {
     const emailError = validateEmail(email);
     if (emailError) {
       setErrors(['email']);
@@ -44,7 +59,7 @@ export default function LoginScreen({ route, navigation }) {
       // Storing the token swaps the navigator to the signed-in stack automatically,
       // so there's no navigate call here.
       await signIn(token, userEmail, name || 'User');
-    } catch (error) {
+    } catch (error: any) {
       const resData = error.response?.data;
       const message =
         resData?.error ||

@@ -1,20 +1,33 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES } from '../theme';
+// @ts-ignore - AppContext is still a plain JS module
 import { useAppContext, api } from '../context/AppContext';
 import { validateOtp, sanitizeDigits } from '../utils/validation';
 
-export default function VerifyOtpScreen({ route, navigation }) {
+type VerifyOtpScreenProps = {
+  route?: {
+    params?: {
+      email?: string;
+    };
+  };
+  navigation: {
+    replace: (screen: string, params?: Record<string, unknown>) => void;
+    [key: string]: any;
+  };
+};
+
+export default function VerifyOtpScreen({ route, navigation }: VerifyOtpScreenProps) {
   const email = route?.params?.email ?? '';
-  const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [resending, setResending] = useState(false);
+  const [code, setCode] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
+  const [resending, setResending] = useState<boolean>(false);
   const { signIn } = useAppContext();
 
-  const errorFrom = (err, fallback) =>
+  const errorFrom = (err: any, fallback: string) =>
     err.response?.data?.error || err.response?.data?.message || fallback;
 
-  const handleVerify = async () => {
+  const handleVerify = async (): Promise<void> => {
     const codeError = validateOtp(code);
     if (codeError) {
       Alert.alert('Check the code', codeError);
@@ -33,20 +46,20 @@ export default function VerifyOtpScreen({ route, navigation }) {
           { text: 'OK', onPress: () => navigation.replace('Login', { autoEmail: email }) },
         ]);
       }
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert('Verification failed', errorFrom(err, 'That code is invalid or has expired'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResend = async () => {
+  const handleResend = async (): Promise<void> => {
     setResending(true);
     try {
       const { data } = await api.post('/auth/resend-otp', { email });
       setCode('');
       Alert.alert('Code sent', data.message || 'A new code is on its way.');
-    } catch (err) {
+    } catch (err: any) {
       Alert.alert('Could not resend', errorFrom(err, 'Try again shortly.'));
     } finally {
       setResending(false);
