@@ -155,9 +155,9 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
           <Text style={styles.label}>Email</Text>
           <Text style={styles.readOnlyValue}>{email || '—'}</Text>
 
-          <Text style={styles.helperText}>
+          {/* <Text style={styles.helperText}>
             Your name and email can't be changed here. Contact support if they need updating.
-          </Text>
+          </Text> */}
         </View>
 
         {/* Change Password */}
