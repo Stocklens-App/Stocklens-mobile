@@ -18,7 +18,13 @@ const L = { cx: 450, cy: 477, r: 181, ring: 42, inner: 158 };
 const INK = '#FFFFFF';
 const GLASS = '#131A26';
 
-export default function SplashScreen({ navigation }) {
+type SplashScreenProps = {
+  navigation: {
+    replace: (screen: string, params?: Record<string, unknown>) => void;
+  };
+};
+
+export default function SplashScreen({ navigation }: SplashScreenProps) {
   const grow  = useRef(BARS.map(() => new Animated.Value(0))).current;
   const lens  = useRef(new Animated.Value(0)).current;
   const scan  = useRef(new Animated.Value(0)).current;
@@ -67,7 +73,7 @@ export default function SplashScreen({ navigation }) {
     return () => clearTimeout(t);
   }, []);
 
-  const barRects = (keyPrefix) =>
+  const barRects = (keyPrefix: string) =>
     BARS.map((b, i) => (
       <ARect
         key={`${keyPrefix}${i}`}

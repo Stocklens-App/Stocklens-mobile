@@ -1,4 +1,4 @@
-// screens/InvestScreen.js
+// screens/InvestScreen.tsx
 import React, { useState } from 'react';
 import {
   View,
@@ -13,7 +13,22 @@ import {
 import { COLORS, SIZES } from '../theme';
 import { useAppContext } from '../context/AppContext';
 
-export default function InvestScreen({ navigation }) {
+type Stock = {
+  id: number | string;
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  priceChangePercentage: number;
+  logoColor?: string;
+};
+
+type InvestScreenProps = {
+  navigation: {
+    navigate: (screen: string, params?: Record<string, unknown>) => void;
+  };
+};
+
+export default function InvestScreen({ navigation }: InvestScreenProps) {
   // Stocks are prefetched at app startup by AppContext — no fetch here.
   const {
     stocks,
@@ -22,9 +37,9 @@ export default function InvestScreen({ navigation }) {
     refetchStocks: fetchStocks,
   } = useAppContext();
 
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState<string>('');
 
-  const visibleStocks = stocks.filter((stock) => {
+  const visibleStocks: Stock[] = stocks.filter((stock: Stock) => {
     const q = query.trim().toLowerCase();
     if (q === '') return true;
     return (
@@ -33,7 +48,7 @@ export default function InvestScreen({ navigation }) {
     );
   });
 
-  const renderStock = ({ item }) => {
+  const renderStock = ({ item }: { item: Stock }) => {
     const isUp = item.priceChangePercentage >= 0;
     const changeColor = isUp ? COLORS.success : COLORS.error;
     const arrow = isUp ? '▲' : '▼';
@@ -67,7 +82,7 @@ export default function InvestScreen({ navigation }) {
     );
   };
 
-  const renderSkeletonRow = (_, index) => (
+  const renderSkeletonRow = (_: unknown, index: number) => (
     <View key={index} style={styles.row}>
       <View style={[styles.logoFallback, styles.skeleton]} />
       <View style={styles.info}>
@@ -84,10 +99,6 @@ export default function InvestScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.container}>
-        {/* <Text style={styles.h1}>Invest</Text>
-        <Text style={styles.subtitle}>
-          Browse verified stocks on the GSE & global markets
-        </Text> */}
         <View style={styles.loadingHeader}>
           <ActivityIndicator color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading stocks...</Text>
@@ -102,7 +113,6 @@ export default function InvestScreen({ navigation }) {
   if (error) {
     return (
       <View style={styles.container}>
-        {/* <Text style={styles.h1}>Invest</Text> */}
         <View style={styles.errorBox}>
           <Text style={styles.errorIcon}>⚠</Text>
           <Text style={styles.errorTitle}>Something went wrong</Text>
@@ -121,12 +131,6 @@ export default function InvestScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Keeps your functional text update */}
-      {/* <Text style={styles.h1}>Invest</Text> */}
-      {/* <Text style={styles.subtitle}>
-        Browse verified stocks on the GSE & global markets
-      </Text> */}
-
       <View style={styles.search}>
         <Text style={styles.searchIcon}>⌕</Text>
         <TextInput

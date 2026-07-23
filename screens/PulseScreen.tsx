@@ -1,4 +1,4 @@
-// screens/PulseScreen.js
+// screens/PulseScreen.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
@@ -11,7 +11,29 @@ import { useAppContext } from '../context/AppContext';
 import { getPriceHistory } from '../data/priceHistory';
 import { simulate } from '../logic/simulation';
 
-const MODES = [
+type Stock = {
+  symbol: string;
+  name: string;
+  logoColor?: string;
+};
+
+type SimulationMode = 'backtest' | 'forecast';
+
+type SeriesPoint = { value: number };
+
+type SimulationResult = {
+  profit: number;
+  series: SeriesPoint[];
+  endValue: number;
+  returnPct: number;
+  isEstimate: boolean;
+  shares: number | null;
+  annualRate: number;
+  band: { low: number; typical: number; high: number };
+  truncated?: boolean;
+};
+
+const MODES: { key: SimulationMode; label: string }[] = [
   { key: 'backtest', label: 'If I had invested' },
   { key: 'forecast', label: 'If I invest now' },
 ];
@@ -25,14 +47,14 @@ const PERIODS = [
 
 const QUICK_AMOUNTS = [100, 500, 1000, 5000];
 
-const fmt = (n) => {
+const fmt = (n: number): string => {
   const x = isFinite(n) ? n : 0;
   const [whole, dec] = Math.abs(x).toFixed(2).split('.');
   const withCommas = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return (x < 0 ? '-₵' : '₵') + withCommas + '.' + dec;
 };
 
-function buildPath(points, w, h, pad) {
+function buildPath(points: SeriesPoint[], w: number, h: number, pad: number) {
   const values = points.map((p) => p.value);
   if (values.length < 2) return { line: '', area: '', firstY: h / 2 };
   const min = Math.min(...values);
@@ -60,23 +82,23 @@ export default function PulseScreen() {
   } = useAppContext();
 
   // ── Simulator state ──
-  const [mode, setMode] = useState('backtest');
-  const [query, setQuery] = useState('');
-  const [selectedSymbol, setSelectedSymbol] = useState(null);
-  const [amountText, setAmountText] = useState('');
-  const [periodLabel, setPeriodLabel] = useState('1Y');
+  const [mode, setMode] = useState<SimulationMode>('backtest');
+  const [query, setQuery] = useState<string>('');
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+  const [amountText, setAmountText] = useState<string>('');
+  const [periodLabel, setPeriodLabel] = useState<string>('1Y');
 
   // Pick the first stock once the list arrives.
   useEffect(() => {
     if (!selectedSymbol && stocks.length > 0) setSelectedSymbol(stocks[0].symbol);
   }, [stocks, selectedSymbol]);
 
-  const stock = stocks.find((s) => s.symbol === selectedSymbol) || null;
+  const stock: Stock | null = stocks.find((s: Stock) => s.symbol === selectedSymbol) || null;
   const amount = parseFloat(amountText);
   const months = (PERIODS.find((p) => p.label === periodLabel) || PERIODS[3]).months;
 
   // Filter the picker by name or symbol (doesn't change the current selection).
-  const filteredStocks = stocks.filter((s) => {
+  const filteredStocks: Stock[] = stocks.filter((s: Stock) => {
     const q = query.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -85,12 +107,12 @@ export default function PulseScreen() {
     );
   });
 
-  const result = useMemo(() => {
+  const result: SimulationResult | null = useMemo(() => {
     if (!stock || !amount || amount <= 0) return null;
     const series = getPriceHistory(stock);
-    return simulate(mode, series, amount, months);
+    return simulate(mode, series, amount, months) as SimulationResult;
   }, [stock, amount, months, mode]);
-
+  
   const isUp = result ? result.profit >= 0 : true;
   const accent = isUp ? COLORS.success : COLORS.error;
   const chart = result ? buildPath(result.series, 300, 120, 8) : null;
@@ -231,7 +253,7 @@ export default function PulseScreen() {
         </View>
 
         {/* RESULT */}
-        {result && stock ? (
+        {result && stock && chart ? (
           <View style={styles.resultCard}>
             <View style={styles.resultHeaderRow}>
               <Text style={styles.resultHeader}>
@@ -279,7 +301,7 @@ export default function PulseScreen() {
 
             {mode === 'backtest' ? (
               <View style={styles.statsRow}>
-                <Stat label="Shares" value={result.shares.toFixed(2)} />
+                <Stat label="Shares" value={result.shares !== null ? result.shares.toFixed(2) : '—'} />
                 <Stat label="Avg / yr" value={`${(result.annualRate * 100).toFixed(1)}%`} />
                 <Stat label="Return" value={`${result.returnPct.toFixed(1)}%`} />
               </View>
@@ -315,7 +337,7 @@ export default function PulseScreen() {
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.stat}>
       <Text style={styles.statLabel}>{label}</Text>

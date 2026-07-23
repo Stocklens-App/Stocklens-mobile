@@ -2,19 +2,26 @@ import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useAppContext, IP_ADDRESS } from '../context/AppContext';
 
+type Module = {
+  id: string | number;
+  category: string;
+  question: string;
+  answer: string;
+};
+
 export default function LearnScreen() {
-  const [activeCategory, setActiveCategory] = useState('Getting Started');
-  const [expandedId, setExpandedId] = useState(null);
+  const [activeCategory, setActiveCategory] = useState<string>('Getting Started');
+  const [expandedId, setExpandedId] = useState<string | number | null>(null);
 
   // Lessons are prefetched at app startup by AppContext — no fetch here.
   const { modules, modulesLoading: loading } = useAppContext();
   const { currentUserEmail } = useAppContext();
 
   // Filter out live items from the state array by the active tab choice
-  const filteredData = modules.filter(item => item.category === activeCategory);
+  const filteredData: Module[] = modules.filter((item: Module) => item.category === activeCategory);
   const categories = ['Getting Started', 'Glossary', 'GSE Basics', 'Scams'];
 
-  const toggleExpand = (id) => {
+  const toggleExpand = (id: string | number) => {
     const opening = expandedId !== id;
     setExpandedId(opening ? id : null);
 
@@ -25,7 +32,7 @@ export default function LearnScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: currentUserEmail, moduleId: String(id) }),
-      }).catch((err) => {
+      }).catch((err: Error) => {
         // Non-critical — don't interrupt reading if this fails.
         console.log('Module completion tracking error:', err.message);
       });
