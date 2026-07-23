@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 import { COLORS, SIZES } from '../theme'; // 👈 Centralized styling design tokens
-import { useAppContext, IP_ADDRESS } from '../context/AppContext';
+import { useAppContext, api } from '../context/AppContext';
 
 export default function LoginScreen({ route, navigation }) {
   const [email, setEmail] = useState('');
@@ -11,7 +10,7 @@ export default function LoginScreen({ route, navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState([]);
-  const { setCurrentUserEmail } = useAppContext();
+  const { signIn } = useAppContext();
 
   const handleLogin = async () => {
     let newErrors = [];
@@ -24,20 +23,24 @@ export default function LoginScreen({ route, navigation }) {
 
     setLoading(true);
     try {
-      const response = await axios.post(`http://${IP_ADDRESS}:8081/auth/login`, {
+      const response = await api.post('/auth/login', {
         email: email.trim(),
         password: password
       });
-      
-      const welcomeMessage = response.data;
-      const nameOnly = welcomeMessage.split(', ')[1] || 'User';
-      
-      setCurrentUserEmail(email.trim());
 
-      // 🚀 Pass the name to our Tab Navigator cleanly
-      navigation.replace('MainTabs', { userName: nameOnly });
+      const { token, email: userEmail, name } = response.data;
+
+      // Storing the token swaps the navigator to the signed-in stack automatically,
+      // so there's no navigate call here.
+      await signIn(token, userEmail, name || 'User');
     } catch (error) {
-      Alert.alert('Login Failed', error.response?.data || 'Server error');
+      const resData = error.response?.data;
+      const message =
+        resData?.error ||
+        resData?.message ||
+        (typeof resData === 'string' ? resData : null) ||
+        'Server error';
+      Alert.alert('Login Failed', message);
     } finally {
       setLoading(false);
     }

@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 import { COLORS, SIZES } from '../theme'; // 👈 Clean import from your shared theme
-import { IP_ADDRESS } from '../context/AppContext';
+import { api } from '../context/AppContext';
 
 export default function RegisterScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -38,13 +37,13 @@ export default function RegisterScreen({ navigation }) {
 
     setLoading(true);
     try {
-      await axios.post(`http://${IP_ADDRESS}:8081/auth/register`, {
+      await api.post('/auth/register', {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         password: password,
         phoneNumber: phoneNumber.trim()
       });
-      
+
       navigation.navigate('Login', { 
         autoEmail: email.trim().toLowerCase(), 
         autoPassword: password 
@@ -55,11 +54,10 @@ export default function RegisterScreen({ navigation }) {
       if (error.response) {
         const resData = error.response.data;
         const errorMessage = 
-          (typeof resData === 'string' ? resData : null) ||
           resData?.error || 
           resData?.message || 
-          resData?.errorMessage || 
-          'Registration validation failed.';
+          (typeof resData === 'string' ? resData : null) ||
+          'Registration failed. Please try again.';
 
         Alert.alert('Registration Failed', errorMessage);
       } else if (error.request) {
