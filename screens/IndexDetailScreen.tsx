@@ -80,19 +80,19 @@ const LargeSparkline = ({ data, color }: LargeSparklineProps) => {
 };
 
 interface IndexDetailScreenProps {
-  route: {
+  route?: {
     params: {
       index: MarketIndex;
     };
   };
-  navigation: {
+  navigation?: {
     goBack: () => void;
     [key: string]: any;
   };
 }
 
 export default function IndexDetailScreen({ route, navigation }: IndexDetailScreenProps) {
-  const { index } = route.params;
+  const { index } = route!.params;
   const { trendingStocks } = useAppContext();
   const color = index.positive ? COLORS.success : COLORS.error;
   const description = INDEX_DESCRIPTIONS[index.symbol] || 'No description available.';
@@ -106,7 +106,7 @@ export default function IndexDetailScreen({ route, navigation }: IndexDetailScre
 
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => navigation!.goBack()} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color={COLORS.textMain} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{index.name}</Text>

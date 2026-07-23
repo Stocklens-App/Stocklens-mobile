@@ -1,4 +1,4 @@
-// theme.js
+// theme.ts
 export const COLORS = {
   background: '#11141A',      // Master canvas dark color
   surface: '#1C212D',         // Input fields and inner cards
@@ -14,4 +14,3 @@ export const SIZES = {
   radius: 8,                  // Uniform corner rounding across the app
   padding: 20,                // Standardized outer page container spacing
 };
-

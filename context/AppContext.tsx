@@ -1,46 +1,115 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+// context/AppContext.tsx
+import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerForPushNotificationsAsync } from '../utils/registerForPushNotifications';
 
-const AppContext = createContext();
-
-export const IP_ADDRESS = '192.168.100.189';
+export const IP_ADDRESS = '10.100.132.167';
 
 const BASE = `http://${IP_ADDRESS}:8081`;
 
 // One shared axios instance — the token lives on it, so every call carries it.
 export const api = axios.create({ baseURL: BASE });
 
-export function AppProvider({ children }) {
+interface MarketIndex {
+  symbol: string;
+  name: string;
+  flag: string;
+  price: number;
+  changeValue: number;
+  changePercent: number;
+  positive: boolean;
+  sparklineData: number[];
+}
+
+interface TrendingStock {
+  ticker: string;
+  companyName: string;
+  currentPrice: number;
+  priceChangePercent: number;
+  positive: boolean;
+  logoColor: string;
+  initials: string;
+}
+
+interface ScamAlert {
+  [key: string]: any;
+}
+
+interface Stock {
+  [key: string]: any;
+}
+
+interface Module {
+  [key: string]: any;
+}
+
+interface AppContextValue {
+  // Auth
+  token: string | null;
+  booting: boolean;
+  signIn: (newToken: string, email: string, name: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  currentUserEmail: string | null;
+  userName: string | null;
+  // Home
+  marketIndices: MarketIndex[];
+  trendingStocks: TrendingStock[];
+  scamAlerts: ScamAlert[];
+  loading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+  // Notifications
+  notificationsEnabled: boolean;
+  toggleNotifications: (enabled: boolean) => Promise<void>;
+  unreadCount: number;
+  refreshUnreadCount: () => Promise<void>;
+  // Stocks
+  stocks: Stock[];
+  stocksLoading: boolean;
+  stocksError: string | null;
+  refetchStocks: () => Promise<void>;
+  // Learn
+  modules: Module[];
+  modulesLoading: boolean;
+  modulesError: string | null;
+  refetchModules: () => Promise<void>;
+}
+
+const AppContext = createContext<AppContextValue | undefined>(undefined);
+
+interface AppProviderProps {
+  children: ReactNode;
+}
+
+export function AppProvider({ children }: AppProviderProps) {
   // ── Auth ──
-  const [token, setToken] = useState(null);
-  const [currentUserEmail, setCurrentUserEmail] = useState(null);
-  const [userName, setUserName] = useState(null);
-  const [booting, setBooting] = useState(true); // still reading stored session
+  const [token, setToken] = useState<string | null>(null);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [booting, setBooting] = useState<boolean>(true); // still reading stored session
 
   // ── Home tab data ──
-  const [marketIndices, setMarketIndices] = useState([]);
-  const [trendingStocks, setTrendingStocks] = useState([]);
-  const [scamAlerts, setScamAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [marketIndices, setMarketIndices] = useState<MarketIndex[]>([]);
+  const [trendingStocks, setTrendingStocks] = useState<TrendingStock[]>([]);
+  const [scamAlerts, setScamAlerts] = useState<ScamAlert[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Notifications
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
   // ── Stock list (Invest + Pulse tabs) ──
-  const [stocks, setStocks] = useState([]);
-  const [stocksLoading, setStocksLoading] = useState(true);
-  const [stocksError, setStocksError] = useState(null);
+  const [stocks, setStocks] = useState<Stock[]>([]);
+  const [stocksLoading, setStocksLoading] = useState<boolean>(true);
+  const [stocksError, setStocksError] = useState<string | null>(null);
 
   // ── Learn tab modules ──
-  const [modules, setModules] = useState([]);
-  const [modulesLoading, setModulesLoading] = useState(true);
-  const [modulesError, setModulesError] = useState(null);
+  const [modules, setModules] = useState<Module[]>([]);
+  const [modulesLoading, setModulesLoading] = useState<boolean>(true);
+  const [modulesError, setModulesError] = useState<string | null>(null);
 
-  
   const signOut = useCallback(async () => {
     console.log('🔴 signOut called', new Error().stack);
     await AsyncStorage.multiRemove(['token', 'email', 'userName']);
@@ -57,7 +126,7 @@ export function AppProvider({ children }) {
     setNotificationsEnabled(false);
   }, []);
 
-  const signIn = useCallback(async (newToken, email, name) => {
+  const signIn = useCallback(async (newToken: string, email: string, name: string) => {
     api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     await AsyncStorage.multiSet([
       ['token', newToken],
@@ -97,7 +166,7 @@ export function AppProvider({ children }) {
           setCurrentUserEmail(savedEmail);
           setUserName(savedName);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.log('Session restore error:', err.message);
       } finally {
         setBooting(false);
@@ -113,7 +182,7 @@ export function AppProvider({ children }) {
       setMarketIndices(response.data.marketIndices || []);
       setTrendingStocks(response.data.trendingStocks || []);
       setScamAlerts(response.data.scamAlerts || []);
-    } catch (err) {
+    } catch (err: any) {
       setError('Failed to load data. Please check your connection.');
       console.log('AppContext home fetch error:', err.message);
     } finally {
@@ -127,7 +196,7 @@ export function AppProvider({ children }) {
       setStocksError(null);
       const response = await api.get('/api/stocks');
       setStocks(response.data || []);
-    } catch (err) {
+    } catch (err: any) {
       setStocksError('Could not load stocks. Check your connection and try again.');
       setStocks([]);
       console.log('AppContext stocks fetch error:', err.message);
@@ -142,7 +211,7 @@ export function AppProvider({ children }) {
       setModulesError(null);
       const response = await api.get('/api/academic/all');
       setModules(response.data || []);
-    } catch (err) {
+    } catch (err: any) {
       setModulesError('Could not load lessons. Check your connection.');
       setModules([]);
       console.log('AppContext modules fetch error:', err.message);
@@ -155,7 +224,7 @@ export function AppProvider({ children }) {
     try {
       const res = await api.get('/api/notifications/unread-count');
       setUnreadCount(res.data.unreadCount || 0);
-    } catch (err) {
+    } catch (err: any) {
       console.log('Unread count fetch error:', err.message);
     }
   }, []);
@@ -183,15 +252,15 @@ export function AppProvider({ children }) {
           registerForPushNotificationsAsync().then((pushToken) => {
             if (pushToken) {
               api.post('/api/users/push-token', { pushToken })
-                .catch((err) => console.log('Push token register error:', err.message));
+                .catch((err: any) => console.log('Push token register error:', err.message));
             }
           });
         }
       })
-      .catch((err) => console.log('Profile load error (notifications):', err.message));
+      .catch((err: any) => console.log('Profile load error (notifications):', err.message));
   }, [token]);
 
-  const toggleNotifications = async (enabled) => {
+  const toggleNotifications = async (enabled: boolean) => {
     setNotificationsEnabled(enabled); // optimistic update
     try {
       await api.put('/api/users/notifications', { enabled });
@@ -202,7 +271,7 @@ export function AppProvider({ children }) {
           await api.post('/api/users/push-token', { pushToken });
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.log('Toggle notifications error:', err.message);
       setNotificationsEnabled(!enabled); // revert on failure
     }
@@ -247,8 +316,12 @@ export function AppProvider({ children }) {
   );
 }
 
-export function useAppContext() {
-  return useContext(AppContext);
+export function useAppContext(): AppContextValue {
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
 }
 
 // Backward-compat alias — pre-rewrite screens (e.g. the GSE / IndexDetailScreen)
