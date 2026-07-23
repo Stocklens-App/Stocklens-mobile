@@ -5,7 +5,7 @@ import { registerForPushNotificationsAsync } from '../utils/registerForPushNotif
 
 const AppContext = createContext();
 
-export const IP_ADDRESS = '10.132.80.46';
+export const IP_ADDRESS = '192.168.100.189';
 
 const BASE = `http://${IP_ADDRESS}:8081`;
 
