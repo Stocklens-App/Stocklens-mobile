@@ -3,6 +3,7 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityInd
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme'; // 👈 Centralized styling design tokens
 import { useAppContext, api } from '../context/AppContext';
+import { validateEmail } from '../utils/validation';
 
 export default function LoginScreen({ route, navigation }) {
   const [email, setEmail] = useState('');
@@ -13,35 +14,38 @@ export default function LoginScreen({ route, navigation }) {
   const { signIn } = useAppContext();
 
   const handleLogin = async () => {
-    let newErrors = [];
-    if (!email) newErrors.push('email');
-    if (!password) newErrors.push('password');
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
+    const emailError = validateEmail(email);
+    if (emailError) {
+      setErrors(['email']);
+      Alert.alert('Check your details', emailError);
       return;
     }
+    if (!password.trim()) {
+      setErrors(['password']);
+      Alert.alert('Check your details', 'Password is required.');
+      return;
+    }
+    setErrors([]);
 
     setLoading(true);
     try {
       const response = await api.post('/auth/login', {
-        email: email.trim(),
-        password: password
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
       });
 
       const { token, email: userEmail, name } = response.data;
+
+      if (!token) {
+        Alert.alert('Login Failed', 'The server did not return a session. Please try again.');
+        return;
+      }
 
       // Storing the token swaps the navigator to the signed-in stack automatically,
       // so there's no navigate call here.
       await signIn(token, userEmail, name || 'User');
     } catch (error) {
       const resData = error.response?.data;
-
-      // Registered but never verified — send them to the code screen instead.
-      if (resData?.needsVerification) {
-        navigation.navigate('VerifyOtp', { email: resData.email });
-        return;
-      }
-
       const message =
         resData?.error ||
         resData?.message ||
@@ -54,8 +58,10 @@ export default function LoginScreen({ route, navigation }) {
   };
 
   useEffect(() => {
-    if (route?.params?.autoEmail && route?.params?.autoPassword) {
+    if (route?.params?.autoEmail) {
       setEmail(route.params.autoEmail);
+    }
+    if (route?.params?.autoPassword) {
       setPassword(route.params.autoPassword);
     }
   }, [route?.params]);
@@ -67,29 +73,39 @@ export default function LoginScreen({ route, navigation }) {
 
       <View style={style.inputContainer}>
         {/* Email Address */}
-        <TextInput 
+        <TextInput
           style={[style.input, errors.includes('email') && style.errorInput]}
           placeholder="Email Address"
           placeholderTextColor={COLORS.textSecondary}
           value={email}
-          onChangeText={(val) => { setEmail(val); setErrors(errors.filter(e => e !== 'email')); }}
+          onChangeText={(val) => {
+            setEmail(val.replace(/\s/g, ''));
+            setErrors(errors.filter((e) => e !== 'email'));
+          }}
           keyboardType="email-address"
           autoCapitalize="none"
+          autoCorrect={false}
+          maxLength={254}
         />
 
         {/* 👁️ Password Input Wrapper */}
         <View style={[style.passwordWrapper, errors.includes('password') && style.errorInput]}>
-          <TextInput 
+          <TextInput
             style={style.passwordInput}
             placeholder="Password"
             placeholderTextColor={COLORS.textSecondary}
             value={password}
-            onChangeText={(val) => { setPassword(val); setErrors(errors.filter(e => e !== 'password')); }}
+            onChangeText={(val) => {
+              setPassword(val);
+              setErrors(errors.filter((e) => e !== 'password'));
+            }}
             secureTextEntry={!showPassword}
             autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={64}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={style.eyeIcon}>
-            <Ionicons name={showPassword ? "eye-off" : "eye"} size={20} color={COLORS.textSecondary} />
+            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -110,90 +126,55 @@ export default function LoginScreen({ route, navigation }) {
 }
 
 const style = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: COLORS.background, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    padding: SIZES.padding 
-  },
-  logoText: { 
-    fontSize: 36, 
-    fontWeight: 'bold', 
-    color: COLORS.primary, 
-    marginBottom: 8 
-  },
-  subTitle: { 
-    fontSize: 14, 
-    color: COLORS.textSecondary, 
-    marginBottom: 40, 
-    textAlign: 'center' 
-  },
-  inputContainer: { 
-    width: '100%', 
-    maxWidth: 320 
-  },
-  input: { 
-    backgroundColor: COLORS.surface, 
-    color: COLORS.textMain, 
-    paddingHorizontal: 16, 
-    paddingVertical: 14, 
-    borderRadius: SIZES.radius, 
-    fontSize: 16, 
-    marginBottom: 16, 
-    borderWidth: 1, 
-    borderColor: COLORS.border 
-  },
-  errorInput: { 
-    borderColor: COLORS.error 
-  },
-  passwordWrapper: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    backgroundColor: COLORS.surface, 
-    borderRadius: SIZES.radius, 
-    borderWidth: 1, 
-    borderColor: COLORS.border, 
-    marginBottom: 16 
-  },
-  passwordInput: { 
-    flex: 1, 
-    color: COLORS.textMain, 
-    paddingHorizontal: 16, 
-    paddingVertical: 14, 
-    fontSize: 16 
-  },
-  eyeIcon: { 
-    paddingRight: 16 
-  },
-  button: { 
-    backgroundColor: COLORS.primary, 
-    paddingVertical: 14, 
-    borderRadius: SIZES.radius, 
-    alignItems: 'center', 
-    marginTop: 10 
-  },
-  buttonText: { 
-    color: COLORS.textMain, 
-    fontSize: 16, 
-    fontWeight: '600' 
-  },
-  toggleLink: { 
-    marginTop: 20, 
-    alignItems: 'center' 
-  },
-  toggleText: { 
-    color: COLORS.primary, 
-    fontSize: 14, 
-    fontWeight: '500' 
-  },
-  forgotLink: {
-    marginTop: 14,
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: SIZES.padding,
   },
-  forgotText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    fontWeight: '500',
+  logoText: { fontSize: 36, fontWeight: 'bold', color: COLORS.primary, marginBottom: 8 },
+  subTitle: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 40, textAlign: 'center' },
+  inputContainer: { width: '100%', maxWidth: 320 },
+  input: {
+    backgroundColor: COLORS.surface,
+    color: COLORS.textMain,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: SIZES.radius,
+    fontSize: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-})
+  errorInput: { borderColor: COLORS.error },
+  passwordWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: SIZES.radius,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    color: COLORS.textMain,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+  },
+  eyeIcon: { paddingRight: 16 },
+  button: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 14,
+    borderRadius: SIZES.radius,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  buttonText: { color: COLORS.textMain, fontSize: 16, fontWeight: '600' },
+  toggleLink: { marginTop: 20, alignItems: 'center' },
+  toggleText: { color: COLORS.primary, fontSize: 14, fontWeight: '500' },
+  forgotLink: { marginTop: 14, alignItems: 'center' },
+  forgotText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '500' },
+});

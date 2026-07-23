@@ -12,14 +12,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
 import { useAppContext, api } from '../context/AppContext';
+import { validatePassword } from '../utils/validation';
 
 export default function AccountSettingsScreen({ navigation }) {
   const { token, signOut } = useAppContext();
 
-  // Profile fields
+  // Read-only profile details
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [savingProfile, setSavingProfile] = useState(false);
 
   // Password fields
   const [currentPassword, setCurrentPassword] = useState('');
@@ -35,7 +35,8 @@ export default function AccountSettingsScreen({ navigation }) {
       setLoadingProfile(false);
       return;
     }
-    api.get('/api/users/profile')
+    api
+      .get('/api/users/profile')
       .then(({ data }) => {
         setName(data.name || '');
         setEmail(data.email || '');
@@ -50,38 +51,35 @@ export default function AccountSettingsScreen({ navigation }) {
   const errorFrom = (err, fallback) =>
     err.response?.data?.error || err.response?.data?.message || fallback;
 
-  const handleSaveProfile = async () => {
-    if (!name.trim() || !email.trim()) {
-      Alert.alert('Missing info', 'Name and email cannot be empty.');
-      return;
-    }
-    setSavingProfile(true);
-    try {
-      await api.put('/api/users/profile', { name, email });
-      Alert.alert(
-        'Success',
-        'Your profile has been updated. Please sign in again for the change to take effect.',
-        [{ text: 'OK', onPress: signOut }]
-      );
-    } catch (err) {
-      Alert.alert('Update failed', errorFrom(err, 'Failed to update profile'));
-    } finally {
-      setSavingProfile(false);
-    }
-  };
-
   const handleChangePassword = async () => {
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      Alert.alert('Missing info', 'Please fill in all password fields.');
+    if (!currentPassword.trim()) {
+      Alert.alert('Check your details', 'Enter your current password.');
       return;
     }
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Mismatch', 'New password and confirmation do not match.');
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      Alert.alert('Check your details', passwordError);
       return;
     }
+    if (!confirmPassword.trim()) {
+      Alert.alert('Check your details', 'Please confirm your new password.');
+      return;
+    }
+    if (newPassword.trim() !== confirmPassword.trim()) {
+      Alert.alert('Check your details', 'New password and confirmation do not match.');
+      return;
+    }
+    if (newPassword.trim() === currentPassword.trim()) {
+      Alert.alert('Check your details', 'Your new password must be different from the current one.');
+      return;
+    }
+
     setSavingPassword(true);
     try {
-      await api.put('/api/users/password', { currentPassword, newPassword });
+      await api.put('/api/users/password', {
+        currentPassword: currentPassword.trim(),
+        newPassword: newPassword.trim(),
+      });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -138,41 +136,19 @@ export default function AccountSettingsScreen({ navigation }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Profile Info */}
+        {/* Profile Info — read only */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>PROFILE INFO</Text>
 
           <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
-            value={name}
-            onChangeText={setName}
-            placeholder="Your name"
-            placeholderTextColor={COLORS.textSecondary || '#7E8494'}
-          />
+          <Text style={styles.readOnlyValue}>{name || '—'}</Text>
 
           <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="you@example.com"
-            placeholderTextColor={COLORS.textSecondary || '#7E8494'}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
+          <Text style={styles.readOnlyValue}>{email || '—'}</Text>
 
-          <TouchableOpacity
-            style={[styles.primaryButton, savingProfile && styles.buttonDisabled]}
-            onPress={handleSaveProfile}
-            disabled={savingProfile}
-          >
-            {savingProfile ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.primaryButtonText}>Save Changes</Text>
-            )}
-          </TouchableOpacity>
+          <Text style={styles.helperText}>
+            Your name and email can't be changed here. Contact support if they need updating.
+          </Text>
         </View>
 
         {/* Change Password */}
@@ -187,6 +163,9 @@ export default function AccountSettingsScreen({ navigation }) {
             placeholder="••••••••"
             placeholderTextColor={COLORS.textSecondary || '#7E8494'}
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={64}
           />
 
           <Text style={styles.label}>New Password</Text>
@@ -197,6 +176,9 @@ export default function AccountSettingsScreen({ navigation }) {
             placeholder="••••••••"
             placeholderTextColor={COLORS.textSecondary || '#7E8494'}
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={64}
           />
 
           <Text style={styles.label}>Confirm New Password</Text>
@@ -207,6 +189,9 @@ export default function AccountSettingsScreen({ navigation }) {
             placeholder="••••••••"
             placeholderTextColor={COLORS.textSecondary || '#7E8494'}
             secureTextEntry
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={64}
           />
 
           <TouchableOpacity
@@ -276,6 +261,18 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   label: { color: COLORS.textSecondary || '#7E8494', fontSize: 12, marginBottom: 6, marginTop: 10 },
+  readOnlyValue: {
+    color: COLORS.textMain || '#FFF',
+    fontSize: 15,
+    fontWeight: '500',
+    paddingVertical: 4,
+  },
+  helperText: {
+    color: COLORS.textSecondary || '#7E8494',
+    fontSize: 12,
+    marginTop: 16,
+    lineHeight: 17,
+  },
   input: {
     backgroundColor: COLORS.background || '#11141A',
     borderRadius: 10,
@@ -296,7 +293,12 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   buttonDisabled: { opacity: 0.6 },
 
-  dangerText: { color: COLORS.textSecondary || '#7E8494', fontSize: 13, marginBottom: 16, lineHeight: 18 },
+  dangerText: {
+    color: COLORS.textSecondary || '#7E8494',
+    fontSize: 13,
+    marginBottom: 16,
+    lineHeight: 18,
+  },
   deleteButton: {
     backgroundColor: COLORS.error || '#E74C3C',
     borderRadius: 12,
