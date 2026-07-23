@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
 // @ts-ignore - AppContext is still a plain JS module
 import { api } from '../context/AppContext';
+import { validateEmail, validateOtp, validatePassword, sanitizeDigits } from '../utils/validation';
 
 interface ForgotPasswordScreenProps {
   navigation: {
@@ -36,10 +37,12 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
     err.response?.data?.error || err.response?.data?.message || fallback;
 
   const handleSendCode = async () => {
-    if (!email.trim()) {
-      Alert.alert('Missing info', 'Please enter your email address.');
+    const emailError = validateEmail(email);
+    if (emailError) {
+      Alert.alert('Check your details', emailError);
       return;
     }
+
     setLoading(true);
     try {
       await api.post('/auth/forgot-password', { email: email.trim().toLowerCase() });
@@ -58,20 +61,22 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
   };
 
   const handleResetPassword = async () => {
-    if (code.trim().length !== 6) {
-      Alert.alert('Invalid code', 'Enter the 6-digit code from your email.');
+    const codeError = validateOtp(code);
+    if (codeError) {
+      Alert.alert('Check the code', codeError);
       return;
     }
-    if (!newPassword || !confirmPassword) {
-      Alert.alert('Missing info', 'Please fill in both password fields.');
+    const passwordError = validatePassword(newPassword);
+    if (passwordError) {
+      Alert.alert('Check your details', passwordError);
       return;
     }
-    if (newPassword.length < 6) {
-      Alert.alert('Too short', 'Password must be at least 6 characters.');
+    if (!confirmPassword.trim()) {
+      Alert.alert('Check your details', 'Please confirm your new password.');
       return;
     }
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Mismatch', 'Passwords do not match.');
+    if (newPassword.trim() !== confirmPassword.trim()) {
+      Alert.alert('Check your details', 'Passwords do not match.');
       return;
     }
 
@@ -80,11 +85,14 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
       await api.post('/auth/reset-password', {
         email: email.trim().toLowerCase(),
         code: code.trim(),
-        newPassword,
+        newPassword: newPassword.trim(),
       });
 
       Alert.alert('Success', 'Your password has been reset. Please sign in.', [
-        { text: 'OK', onPress: () => navigation.replace('Login', { autoEmail: email.trim().toLowerCase() }) },
+        {
+          text: 'OK',
+          onPress: () => navigation.replace('Login', { autoEmail: email.trim().toLowerCase() }),
+        },
       ]);
     } catch (err: any) {
       Alert.alert('Reset failed', errorFrom(err, 'That code is invalid or has expired'));
@@ -102,7 +110,7 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
       <Text style={style.logoText}>Reset Password</Text>
       <Text style={style.subTitle}>
         {step === 1
-          ? 'Enter the email address linked to your account and we\'ll send you a code.'
+          ? "Enter the email address linked to your account and we'll send you a code."
           : 'Enter the code we emailed you, then choose a new password.'}
       </Text>
 
@@ -114,9 +122,11 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
               placeholder="Email Address"
               placeholderTextColor={COLORS.textSecondary}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(val) => setEmail(val.replace(/\s/g, ''))}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
+              maxLength={254}
             />
 
             <TouchableOpacity style={style.button} onPress={handleSendCode} disabled={loading}>
@@ -134,7 +144,7 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
               placeholder="000000"
               placeholderTextColor={COLORS.textSecondary}
               value={code}
-              onChangeText={(val) => setCode(val.replace(/[^0-9]/g, ''))}
+              onChangeText={(val) => setCode(sanitizeDigits(val, 6))}
               keyboardType="number-pad"
               maxLength={6}
               textAlign="center"
@@ -149,9 +159,15 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
                 onChangeText={setNewPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={64}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={style.eyeIcon}>
-                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.textSecondary} />
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={20}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
             </View>
 
@@ -164,6 +180,8 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showPassword}
                 autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={64}
               />
             </View>
 
@@ -222,10 +240,7 @@ const style = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 20,
   },
-  inputContainer: {
-    width: '100%',
-    maxWidth: 320,
-  },
+  inputContainer: { width: '100%', maxWidth: 320 },
   input: {
     backgroundColor: COLORS.surface,
     color: COLORS.textMain,
@@ -266,9 +281,7 @@ const style = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
   },
-  eyeIcon: {
-    paddingRight: 16,
-  },
+  eyeIcon: { paddingRight: 16 },
   button: {
     backgroundColor: COLORS.primary,
     paddingVertical: 14,
@@ -276,18 +289,7 @@ const style = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  buttonText: {
-    color: COLORS.textMain,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  toggleLink: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  toggleText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
+  buttonText: { color: COLORS.textMain, fontSize: 16, fontWeight: '600' },
+  toggleLink: { marginTop: 20, alignItems: 'center' },
+  toggleText: { color: COLORS.primary, fontSize: 14, fontWeight: '500' },
 });

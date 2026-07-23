@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES } from '../theme';
 import { useAppContext, api } from '../context/AppContext';
+import { validateOtp, sanitizeDigits } from '../utils/validation';
 
 export default function VerifyOtpScreen({ route, navigation }) {
   const email = route?.params?.email ?? '';
@@ -14,8 +15,9 @@ export default function VerifyOtpScreen({ route, navigation }) {
     err.response?.data?.error || err.response?.data?.message || fallback;
 
   const handleVerify = async () => {
-    if (code.trim().length !== 6) {
-      Alert.alert('Invalid code', 'Enter the 6-digit code from your email.');
+    const codeError = validateOtp(code);
+    if (codeError) {
+      Alert.alert('Check the code', codeError);
       return;
     }
 
@@ -42,6 +44,7 @@ export default function VerifyOtpScreen({ route, navigation }) {
     setResending(true);
     try {
       const { data } = await api.post('/auth/resend-otp', { email });
+      setCode('');
       Alert.alert('Code sent', data.message || 'A new code is on its way.');
     } catch (err) {
       Alert.alert('Could not resend', errorFrom(err, 'Try again shortly.'));
@@ -64,7 +67,7 @@ export default function VerifyOtpScreen({ route, navigation }) {
           placeholder="000000"
           placeholderTextColor={COLORS.textSecondary}
           value={code}
-          onChangeText={(val) => setCode(val.replace(/[^0-9]/g, ''))}
+          onChangeText={(val) => setCode(sanitizeDigits(val, 6))}
           keyboardType="number-pad"
           maxLength={6}
           textAlign="center"
@@ -75,9 +78,7 @@ export default function VerifyOtpScreen({ route, navigation }) {
         </TouchableOpacity>
 
         <TouchableOpacity style={style.toggleLink} onPress={handleResend} disabled={resending}>
-          <Text style={style.toggleText}>
-            {resending ? 'Sending…' : "Didn't get it? Resend code"}
-          </Text>
+          <Text style={style.toggleText}>{resending ? 'Sending…' : "Didn't get it? Resend code"}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={style.forgotLink} onPress={() => navigation.replace('Login')}>
@@ -96,12 +97,7 @@ const style = StyleSheet.create({
     justifyContent: 'center',
     padding: SIZES.padding,
   },
-  logoText: {
-    fontSize: 30,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: 8,
-  },
+  logoText: { fontSize: 30, fontWeight: 'bold', color: COLORS.primary, marginBottom: 8 },
   subTitle: {
     fontSize: 14,
     color: COLORS.textSecondary,
@@ -109,14 +105,8 @@ const style = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  emailText: {
-    color: COLORS.textMain,
-    fontWeight: '600',
-  },
-  inputContainer: {
-    width: '100%',
-    maxWidth: 320,
-  },
+  emailText: { color: COLORS.textMain, fontWeight: '600' },
+  inputContainer: { width: '100%', maxWidth: 320 },
   codeInput: {
     backgroundColor: COLORS.surface,
     color: COLORS.textMain,
@@ -137,27 +127,9 @@ const style = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  buttonText: {
-    color: COLORS.textMain,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  toggleLink: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  toggleText: {
-    color: COLORS.primary,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  forgotLink: {
-    marginTop: 14,
-    alignItems: 'center',
-  },
-  forgotText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    fontWeight: '500',
-  },
+  buttonText: { color: COLORS.textMain, fontSize: 16, fontWeight: '600' },
+  toggleLink: { marginTop: 20, alignItems: 'center' },
+  toggleText: { color: COLORS.primary, fontSize: 14, fontWeight: '500' },
+  forgotLink: { marginTop: 14, alignItems: 'center' },
+  forgotText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '500' },
 });
