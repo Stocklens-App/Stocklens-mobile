@@ -40,7 +40,9 @@ export function AppProvider({ children }) {
   const [modulesLoading, setModulesLoading] = useState(true);
   const [modulesError, setModulesError] = useState(null);
 
+  
   const signOut = useCallback(async () => {
+    console.log('🔴 signOut called', new Error().stack);
     await AsyncStorage.multiRemove(['token', 'email', 'userName']);
     delete api.defaults.headers.common['Authorization'];
     setToken(null);
@@ -67,8 +69,8 @@ export function AppProvider({ children }) {
     setUserName(name);
   }, []);
 
-  // An expired or invalid token should log the user out cleanly,
-  // rather than leaving every screen silently failing.
+  // Only a rejected token (401) signs the user out. A 403 from one misbehaving
+  // endpoint must not tear down the whole session.
   useEffect(() => {
     const id = api.interceptors.response.use(
       (res) => res,

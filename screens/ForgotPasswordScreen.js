@@ -10,43 +10,48 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
-import { IP_ADDRESS } from '../context/AppContext';
+import { api } from '../context/AppContext';
 
 export default function ForgotPasswordScreen({ navigation }) {
-  // step 1 = enter email, step 2 = set new password
+  // step 1 = enter email, step 2 = code + new password
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleCheckEmail = async () => {
+  const errorFrom = (err, fallback) =>
+    err.response?.data?.error || err.response?.data?.message || fallback;
+
+  const handleSendCode = async () => {
     if (!email.trim()) {
       Alert.alert('Missing info', 'Please enter your email address.');
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(
-        `http://${IP_ADDRESS}:8081/api/users/exists?email=${encodeURIComponent(email.trim())}`
+      await api.post('/auth/forgot-password', { email: email.trim().toLowerCase() });
+      // The server answers the same way whether or not the account exists,
+      // so we always move to step 2.
+      Alert.alert(
+        'Check your email',
+        'If an account exists for that address, a 6-digit reset code has been sent.'
       );
-      const data = await res.json();
-      if (!res.ok) throw new Error('Something went wrong. Please try again.');
-
-      if (!data.exists) {
-        Alert.alert('Not found', 'No account exists with that email address.');
-        return;
-      }
       setStep(2);
     } catch (err) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Error', errorFrom(err, 'Something went wrong. Please try again.'));
     } finally {
       setLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
+    if (code.trim().length !== 6) {
+      Alert.alert('Invalid code', 'Enter the 6-digit code from your email.');
+      return;
+    }
     if (!newPassword || !confirmPassword) {
       Alert.alert('Missing info', 'Please fill in both password fields.');
       return;
@@ -62,21 +67,17 @@ export default function ForgotPasswordScreen({ navigation }) {
 
     setLoading(true);
     try {
-      const res = await fetch(`http://${IP_ADDRESS}:8081/api/users/reset-password`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), newPassword }),
+      await api.post('/auth/reset-password', {
+        email: email.trim().toLowerCase(),
+        code: code.trim(),
+        newPassword,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(typeof data === 'string' ? data : 'Failed to reset password');
-      }
 
       Alert.alert('Success', 'Your password has been reset. Please sign in.', [
-        { text: 'OK', onPress: () => navigation.replace('Login', { autoEmail: email.trim() }) },
+        { text: 'OK', onPress: () => navigation.replace('Login', { autoEmail: email.trim().toLowerCase() }) },
       ]);
     } catch (err) {
-      Alert.alert('Reset failed', err.message);
+      Alert.alert('Reset failed', errorFrom(err, 'That code is invalid or has expired'));
     } finally {
       setLoading(false);
     }
@@ -91,8 +92,8 @@ export default function ForgotPasswordScreen({ navigation }) {
       <Text style={style.logoText}>Reset Password</Text>
       <Text style={style.subTitle}>
         {step === 1
-          ? "Enter the email address linked to your account."
-          : "Choose a new password for your account."}
+          ? 'Enter the email address linked to your account and we\'ll send you a code.'
+          : 'Enter the code we emailed you, then choose a new password.'}
       </Text>
 
       <View style={style.inputContainer}>
@@ -108,16 +109,27 @@ export default function ForgotPasswordScreen({ navigation }) {
               autoCapitalize="none"
             />
 
-            <TouchableOpacity style={style.button} onPress={handleCheckEmail} disabled={loading}>
+            <TouchableOpacity style={style.button} onPress={handleSendCode} disabled={loading}>
               {loading ? (
                 <ActivityIndicator color={COLORS.textMain} />
               ) : (
-                <Text style={style.buttonText}>Continue</Text>
+                <Text style={style.buttonText}>Send Code</Text>
               )}
             </TouchableOpacity>
           </>
         ) : (
           <>
+            <TextInput
+              style={style.codeInput}
+              placeholder="000000"
+              placeholderTextColor={COLORS.textSecondary}
+              value={code}
+              onChangeText={(val) => setCode(val.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              maxLength={6}
+              textAlign="center"
+            />
+
             <View style={style.passwordWrapper}>
               <TextInput
                 style={style.passwordInput}
@@ -151,6 +163,10 @@ export default function ForgotPasswordScreen({ navigation }) {
               ) : (
                 <Text style={style.buttonText}>Reset Password</Text>
               )}
+            </TouchableOpacity>
+
+            <TouchableOpacity style={style.toggleLink} onPress={handleSendCode} disabled={loading}>
+              <Text style={style.toggleText}>Resend code</Text>
             </TouchableOpacity>
           </>
         )}
@@ -210,6 +226,19 @@ const style = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  codeInput: {
+    backgroundColor: COLORS.surface,
+    color: COLORS.textMain,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: SIZES.radius,
+    fontSize: 26,
+    letterSpacing: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    fontWeight: '700',
   },
   passwordWrapper: {
     flexDirection: 'row',

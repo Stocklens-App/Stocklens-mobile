@@ -11,11 +11,10 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
-import { useAppContext } from '../context/AppContext';
-import { IP_ADDRESS } from '../context/AppContext';
+import { useAppContext, api } from '../context/AppContext';
 
 export default function AccountSettingsScreen({ navigation }) {
-  const { currentUserEmail, setCurrentUserEmail } = useAppContext();
+  const { token, signOut } = useAppContext();
 
   // Profile fields
   const [name, setName] = useState('');
@@ -32,16 +31,12 @@ export default function AccountSettingsScreen({ navigation }) {
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   useEffect(() => {
-    if (!currentUserEmail) {
+    if (!token) {
       setLoadingProfile(false);
       return;
     }
-    fetch(`http://${IP_ADDRESS}:8081/api/users/profile?email=${encodeURIComponent(currentUserEmail)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
+    api.get('/api/users/profile')
+      .then(({ data }) => {
         setName(data.name || '');
         setEmail(data.email || '');
         setLoadingProfile(false);
@@ -50,7 +45,10 @@ export default function AccountSettingsScreen({ navigation }) {
         console.error('Account Settings load error:', err.message);
         setLoadingProfile(false);
       });
-  }, [currentUserEmail]);
+  }, [token]);
+
+  const errorFrom = (err, fallback) =>
+    err.response?.data?.error || err.response?.data?.message || fallback;
 
   const handleSaveProfile = async () => {
     if (!name.trim() || !email.trim()) {
@@ -59,20 +57,14 @@ export default function AccountSettingsScreen({ navigation }) {
     }
     setSavingProfile(true);
     try {
-      const res = await fetch(`http://${IP_ADDRESS}:8081/api/users/profile`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentEmail: currentUserEmail, name, email }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(typeof data === 'string' ? data : 'Failed to update profile');
-      }
-      // Email may have changed — keep context in sync
-      setCurrentUserEmail(email);
-      Alert.alert('Success', 'Your profile has been updated.');
+      await api.put('/api/users/profile', { name, email });
+      Alert.alert(
+        'Success',
+        'Your profile has been updated. Please sign in again for the change to take effect.',
+        [{ text: 'OK', onPress: signOut }]
+      );
     } catch (err) {
-      Alert.alert('Update failed', err.message);
+      Alert.alert('Update failed', errorFrom(err, 'Failed to update profile'));
     } finally {
       setSavingProfile(false);
     }
@@ -89,21 +81,13 @@ export default function AccountSettingsScreen({ navigation }) {
     }
     setSavingPassword(true);
     try {
-      const res = await fetch(`http://${IP_ADDRESS}:8081/api/users/password`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUserEmail, currentPassword, newPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(typeof data === 'string' ? data : 'Failed to change password');
-      }
+      await api.put('/api/users/password', { currentPassword, newPassword });
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       Alert.alert('Success', 'Your password has been changed.');
     } catch (err) {
-      Alert.alert('Password change failed', err.message);
+      Alert.alert('Password change failed', errorFrom(err, 'Failed to change password'));
     } finally {
       setSavingPassword(false);
     }
@@ -121,18 +105,11 @@ export default function AccountSettingsScreen({ navigation }) {
           onPress: async () => {
             setDeleting(true);
             try {
-              const res = await fetch(
-                `http://${IP_ADDRESS}:8081/api/users/profile?email=${encodeURIComponent(currentUserEmail)}`,
-                { method: 'DELETE' }
-              );
-              const data = await res.json();
-              if (!res.ok) {
-                throw new Error(typeof data === 'string' ? data : 'Failed to delete account');
-              }
-              setCurrentUserEmail(null);
-              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+              await api.delete('/api/users/profile');
+              // Clearing the token returns us to the signed-out stack automatically.
+              await signOut();
             } catch (err) {
-              Alert.alert('Delete failed', err.message);
+              Alert.alert('Delete failed', errorFrom(err, 'Failed to delete account'));
             } finally {
               setDeleting(false);
             }

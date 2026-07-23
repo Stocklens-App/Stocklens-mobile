@@ -44,10 +44,8 @@ export default function RegisterScreen({ navigation }) {
         phoneNumber: phoneNumber.trim()
       });
 
-      navigation.navigate('Login', { 
-        autoEmail: email.trim().toLowerCase(), 
-        autoPassword: password 
-      });
+      // Account created but unverified — go enter the emailed code.
+      navigation.navigate('VerifyOtp', { email: email.trim().toLowerCase() });
     } catch (error) {
       console.log("🔴 Backend Raw Error Payload:", error.response?.data);
 

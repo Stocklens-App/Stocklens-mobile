@@ -35,6 +35,13 @@ export default function LoginScreen({ route, navigation }) {
       await signIn(token, userEmail, name || 'User');
     } catch (error) {
       const resData = error.response?.data;
+
+      // Registered but never verified — send them to the code screen instead.
+      if (resData?.needsVerification) {
+        navigation.navigate('VerifyOtp', { email: resData.email });
+        return;
+      }
+
       const message =
         resData?.error ||
         resData?.message ||

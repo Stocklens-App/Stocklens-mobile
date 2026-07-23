@@ -1,38 +1,41 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Switch, ActivityIndicator, ScrollView } from 'react-native';
 import { COLORS, SIZES } from '../theme'; 
-import { useAppContext, IP_ADDRESS } from '../context/AppContext';
+import { useAppContext, api } from '../context/AppContext';
 
 export default function ProfileScreen({ navigation }) {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { currentUserEmail, notificationsEnabled, toggleNotifications } = useAppContext();
+  const { token, notificationsEnabled, toggleNotifications, signOut } = useAppContext();
 
   useEffect(() => {
-  if (!currentUserEmail) {
-    setLoading(false);
-    return;
-  }
-  fetch(`http://${IP_ADDRESS}:8081/api/users/profile?email=${encodeURIComponent(currentUserEmail)}`)
-    .then((res) => {
-      if (!res.ok) {
-        throw new Error(`Server responded with ${res.status}`);
-      }
-      return res.json();
-    })
-    .then((data) => {
-      setUserData(data);
+    if (!token) {
       setLoading(false);
-    })
-    .catch((err) => {
-      console.error("Backend Connection Error: ", err.message);
-      setLoading(false);
-    });
-}, [currentUserEmail]);
+      return;
+    }
+    api.get('/api/users/profile')
+      .then(({ data }) => {
+        setUserData(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Profile load error:', err.message);
+        setLoading(false);
+      });
+  }, [token]);
+
   const totalModules = 80;
   const progressPercent = userData?.modulesCompleted 
     ? (userData.modulesCompleted / totalModules) * 100 
     : 0;
+
+  if (loading) {
+    return (
+      <View style={[style.container, style.center]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={style.container}>
@@ -107,10 +110,11 @@ export default function ProfileScreen({ navigation }) {
           />
         </View>
 
-        {/* Logout Button */}
+        {/* Logout Button — clearing the token swaps the navigator back to the
+            signed-out stack on its own, so there's no navigate call here. */}
         <TouchableOpacity 
           style={style.logoutButton} 
-          onPress={() => navigation.replace('Login')}
+          onPress={signOut}
         >
           <Text style={style.logoutText}>Log Out Account</Text>
         </TouchableOpacity>

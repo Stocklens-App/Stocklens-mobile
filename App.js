@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import SplashScreen from './screens/SplashScreen';
 import LoginScreen from './screens/LoginScreen';
 import RegisterScreen from './screens/RegisterScreen';
+import VerifyOtpScreen from './screens/VerifyOtpScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import DashboardScreen from './screens/DashboardScreen';
 import InvestScreen from './screens/InvestScreen';
@@ -142,6 +143,7 @@ function RootNavigator() {
           />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="VerifyOtp" component={VerifyOtpScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         </>
       )}
