@@ -1,26 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import type { StackScreenProps } from '@react-navigation/stack';
 import { COLORS, SIZES } from '../theme'; // 👈 Centralized styling design tokens
-// @ts-ignore - AppContext is still a plain JS module
 import { useAppContext, api } from '../context/AppContext';
 import { validateEmail } from '../utils/validation';
+import type { RootStackParamList } from '../navigation/types';
 
 type FieldName = 'email' | 'password';
 
-type LoginScreenProps = {
-  route?: {
-    params?: {
-      autoEmail?: string;
-      autoPassword?: string;
-    };
-  };
-  navigation: {
-    navigate: (screen: string, params?: Record<string, unknown>) => void;
-  };
-};
+type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
-export default function LoginScreen({ route, navigation }: LoginScreenProps) {
+interface LoginResponse {
+  token: string;
+  email: string;
+  name: string;
+  message?: string;
+}
+
+export default function LoginScreen({ route, navigation }: Props) {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -44,7 +42,7 @@ export default function LoginScreen({ route, navigation }: LoginScreenProps) {
 
     setLoading(true);
     try {
-      const response = await api.post('/auth/login', {
+      const response = await api.post<LoginResponse>('/auth/login', {
         email: email.trim().toLowerCase(),
         password: password.trim(),
       });
@@ -73,13 +71,13 @@ export default function LoginScreen({ route, navigation }: LoginScreenProps) {
   };
 
   useEffect(() => {
-    if (route?.params?.autoEmail) {
+    if (route.params?.autoEmail) {
       setEmail(route.params.autoEmail);
     }
-    if (route?.params?.autoPassword) {
+    if (route.params?.autoPassword) {
       setPassword(route.params.autoPassword);
     }
-  }, [route?.params]);
+  }, [route.params]);
 
   return (
     <View style={style.container}>
