@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
-import { COLORS, SIZES } from '../theme'; // 👈 Centralized styling design tokens
+import { COLORS, SIZES } from '../theme';
 import { useAppContext, api } from '../context/AppContext';
 import { validateEmail } from '../utils/validation';
 import type { RootStackParamList } from '../navigation/types';
 
 type FieldName = 'email' | 'password';
-
 type Props = StackScreenProps<RootStackParamList, 'Login'>;
 
 interface LoginResponse {
@@ -54,8 +53,6 @@ export default function LoginScreen({ route, navigation }: Props) {
         return;
       }
 
-      // Storing the token swaps the navigator to the signed-in stack automatically,
-      // so there's no navigate call here.
       await signIn(token, userEmail, name || 'User');
     } catch (error: any) {
       const resData = error.response?.data;
@@ -81,30 +78,36 @@ export default function LoginScreen({ route, navigation }: Props) {
 
   return (
     <View style={style.container}>
+      <View style={style.logoBox}>
+        <Ionicons name="trending-up" size={26} color={COLORS.primary} />
+      </View>
+
       <Text style={style.logoText}>StockLens</Text>
       <Text style={style.subTitle}>Track stock, sales, and profits in real-time</Text>
 
       <View style={style.inputContainer}>
-        {/* Email Address */}
-        <TextInput
-          style={[style.input, errors.includes('email') && style.errorInput]}
-          placeholder="Email Address"
-          placeholderTextColor={COLORS.textSecondary}
-          value={email}
-          onChangeText={(val) => {
-            setEmail(val.replace(/\s/g, ''));
-            setErrors(errors.filter((e) => e !== 'email'));
-          }}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          maxLength={254}
-        />
-
-        {/* 👁️ Password Input Wrapper */}
-        <View style={[style.passwordWrapper, errors.includes('password') && style.errorInput]}>
+        <View style={[style.inputWrapper, errors.includes('email') && style.errorInput]}>
+          <Ionicons name="mail-outline" size={18} color={COLORS.textSecondary} style={style.leadingIcon} />
           <TextInput
-            style={style.passwordInput}
+            style={style.input}
+            placeholder="Email Address"
+            placeholderTextColor={COLORS.textSecondary}
+            value={email}
+            onChangeText={(val) => {
+              setEmail(val.replace(/\s/g, ''));
+              setErrors(errors.filter((e) => e !== 'email'));
+            }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            maxLength={254}
+          />
+        </View>
+
+        <View style={[style.inputWrapper, errors.includes('password') && style.errorInput]}>
+          <Ionicons name="lock-closed-outline" size={18} color={COLORS.textSecondary} style={style.leadingIcon} />
+          <TextInput
+            style={style.input}
             placeholder="Password"
             placeholderTextColor={COLORS.textSecondary}
             value={password}
@@ -146,22 +149,21 @@ const style = StyleSheet.create({
     justifyContent: 'center',
     padding: SIZES.padding,
   },
+  logoBox: {
+    width: 52,
+    height: 52,
+    borderRadius: SIZES.radius + 6,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
   logoText: { fontSize: 36, fontWeight: 'bold', color: COLORS.primary, marginBottom: 8 },
   subTitle: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 40, textAlign: 'center' },
   inputContainer: { width: '100%', maxWidth: 320 },
-  input: {
-    backgroundColor: COLORS.surface,
-    color: COLORS.textMain,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: SIZES.radius,
-    fontSize: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  errorInput: { borderColor: COLORS.error },
-  passwordWrapper: {
+  inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.surface,
@@ -169,15 +171,17 @@ const style = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     marginBottom: 16,
+    paddingHorizontal: 16,
   },
-  passwordInput: {
+  leadingIcon: { marginRight: 8 },
+  input: {
     flex: 1,
     color: COLORS.textMain,
-    paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
   },
-  eyeIcon: { paddingRight: 16 },
+  errorInput: { borderColor: COLORS.error },
+  eyeIcon: { paddingLeft: 8 },
   button: {
     backgroundColor: COLORS.primary,
     paddingVertical: 14,

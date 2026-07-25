@@ -19,7 +19,7 @@ import type {
   UserProfile,
 } from '../types';
 
-export const IP_ADDRESS = '192.168.100.189';
+export const IP_ADDRESS = '192.168.0.4';
 
 const BASE = `http://${IP_ADDRESS}:8081`;
 
