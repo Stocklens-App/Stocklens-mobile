@@ -97,7 +97,8 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
     }
   };
 
-  const handleMarkAllRead = async () => {
+  const handleMarkAllRead = async (): Promise<void> => {
+    if (!currentUserEmail) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
       await fetch(
