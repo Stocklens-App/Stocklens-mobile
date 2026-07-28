@@ -95,8 +95,8 @@ const formatCount = (value?: number | null): string => {
 };
 
 export default function StockDetailScreen({ route, navigation }: StockDetailScreenProps) {
-  const { stock: initialStock } = route!.params;
-  const [stock, setStock] = useState<Stock>(initialStock);
+const { stock: initialStock } = route!.params;
+const [stock, setStock] = useState<Stock>(initialStock);
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [showAllBrokers, setShowAllBrokers] = useState(false);
 

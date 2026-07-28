@@ -9,11 +9,14 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
 // @ts-ignore - AppContext is still a plain JS module
-import { useAppContext, IP_ADDRESS } from '../context/AppContext';
+import { useAppContext, api, IP_ADDRESS } from '../context/AppContext';
 
 interface Holding {
   ticker: string;
@@ -32,13 +35,20 @@ interface Holding {
 }
 
 interface PortfolioResponse {
+  portfolioName: string;
+  baseCurrency: string;
+  preferredMarket: string;
+  investmentGoal: string;
+  riskLevel: string;
+  visibility: string;
+  alertsEnabled: boolean;
+
   holdings: Holding[];
   totalValue: number;
   totalCost: number;
   totalGainLossValue: number;
   totalGainLossPct: number;
 }
-
 interface MyPortfolioScreenProps {
   navigation: {
     goBack: () => void;
@@ -54,32 +64,47 @@ export default function MyPortfolioScreen({ navigation }: MyPortfolioScreenProps
   const [error, setError] = useState<string | null>(null);
 
   const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [editPortfolioModal, setEditPortfolioModal] = useState(false);
+  const [portfolioName, setPortfolioName] = useState("");
+  const [baseCurrency, setBaseCurrency] = useState("");
+  const [preferredMarket, setPreferredMarket] = useState("");
+  const [investmentGoal, setInvestmentGoal] = useState("");
+  const [riskLevel, setRiskLevel] = useState("");
   const [ticker, setTicker] = useState<string>('');
   const [quantity, setQuantity] = useState<string>('');
   const [avgBuyPrice, setAvgBuyPrice] = useState<string>('');
   const [saving, setSaving] = useState<boolean>(false);
 
   const fetchPortfolio = useCallback(() => {
-    if (!currentUserEmail) {
+  if (!currentUserEmail) {
+    setLoading(false);
+    return;
+  }
+  console.log("Current email:", currentUserEmail);
+console.log("Token header:", api.defaults.headers.common['Authorization']);
+
+  setError(null);
+
+  api.get(`/api/portfolio?email=${encodeURIComponent(currentUserEmail)}`)
+    .then(({ data }) => {
+      console.log(
+"PORTFOLIO RESPONSE:",
+JSON.stringify(data,null,2)
+);
+      setPortfolio(data);
       setLoading(false);
-      return;
-    }
-    setError(null);
-    fetch(`http://${IP_ADDRESS}:8081/api/portfolio?email=${encodeURIComponent(currentUserEmail)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-        return res.json();
-      })
-      .then((data: PortfolioResponse) => {
-        setPortfolio(data);
-        setLoading(false);
-      })
-      .catch((err: Error) => {
-        console.error('Portfolio load error:', err.message);
-        setError('Could not load your portfolio.');
-        setLoading(false);
-      });
-  }, [currentUserEmail]);
+    })
+    .catch((err) => {
+      console.error(
+        "Portfolio load error:",
+        err.response?.status,
+        err.message
+      );
+      setError('Could not load your portfolio.');
+      setLoading(false);
+    });
+
+}, [currentUserEmail]);
 
   useEffect(() => {
     fetchPortfolio();
@@ -91,36 +116,40 @@ export default function MyPortfolioScreen({ navigation }: MyPortfolioScreenProps
     setAvgBuyPrice('');
   };
 
-  const handleAddHolding = async () => {
-    if (!ticker.trim() || !quantity.trim() || !avgBuyPrice.trim()) {
-      Alert.alert('Missing info', 'Please fill in all fields.');
-      return;
-    }
-    setSaving(true);
-    try {
-      const res = await fetch(`http://${IP_ADDRESS}:8081/api/portfolio`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: currentUserEmail,
-          ticker: ticker.trim().toUpperCase(),
-          quantity: parseFloat(quantity),
-          avgBuyPrice: parseFloat(avgBuyPrice),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(typeof data === 'string' ? data : 'Failed to add holding');
-      }
-      setModalVisible(false);
-      resetForm();
-      fetchPortfolio();
-    } catch (err: any) {
-      Alert.alert('Add failed', err.message);
-    } finally {
-      setSaving(false);
-    }
-  };
+ const handleAddHolding = async () => {
+  if (!ticker.trim() || !quantity.trim() || !avgBuyPrice.trim()) {
+    Alert.alert('Missing info', 'Please fill in all fields.');
+    return;
+  }
+
+  setSaving(true);
+
+  try {
+    await api.post('/api/portfolio', {
+      email: currentUserEmail,
+      ticker: ticker.trim().toUpperCase(),
+      quantity: parseFloat(quantity),
+      avgBuyPrice: parseFloat(avgBuyPrice),
+    });
+
+    // close keyboard first
+    Keyboard.dismiss();
+
+    // close modal
+    setModalVisible(false);
+
+    // clear fields
+    resetForm();
+
+    // refresh portfolio
+    fetchPortfolio();
+
+  } catch (err: any) {
+    Alert.alert('Add failed', err.message);
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleRemoveHolding = (holdingTicker: string) => {
     Alert.alert(
@@ -133,18 +162,54 @@ export default function MyPortfolioScreen({ navigation }: MyPortfolioScreenProps
           style: 'destructive',
           onPress: async () => {
             try {
-              const res = await fetch(
-                `http://${IP_ADDRESS}:8081/api/portfolio?email=${encodeURIComponent(currentUserEmail)}&ticker=${encodeURIComponent(holdingTicker)}`,
-                { method: 'DELETE' }
-              );
-              const data = await res.json();
-              if (!res.ok) {
-                throw new Error(typeof data === 'string' ? data : 'Failed to remove holding');
-              }
+              await api.delete(
+  `/api/portfolio?email=${encodeURIComponent(currentUserEmail ?? '')}&ticker=${encodeURIComponent(holdingTicker)}`
+);
               fetchPortfolio();
             } catch (err: any) {
               Alert.alert('Remove failed', err.message);
             }
+          },
+        },
+      ]
+    );
+  };
+   const handleEditPortfolio = async () => {
+  try {
+    await api.put("/api/portfolio/settings", {
+      userEmail: currentUserEmail,
+      portfolioName: portfolio?.portfolioName,
+      baseCurrency: portfolio?.baseCurrency,
+      preferredMarket: portfolio?.preferredMarket,
+      investmentGoal: portfolio?.investmentGoal,
+      riskLevel: portfolio?.riskLevel,
+      visibility: portfolio?.visibility,
+      alertsEnabled: portfolio?.alertsEnabled,
+    });
+
+    Alert.alert("Success", "Portfolio updated.");
+    fetchPortfolio();
+
+  } catch (err) {
+    Alert.alert("Error", "Could not update portfolio.");
+  }
+};
+
+
+  const handleDeletePortfolio = () => {
+    Alert.alert(
+      "Delete Portfolio",
+      "Are you sure you want to delete this portfolio?",
+      [
+        {
+          text:"Cancel",
+          style:"cancel",
+        },
+        {
+          text:"Delete",
+          style:"destructive",
+          onPress:()=>{
+            console.log("Delete portfolio API will go here");
           },
         },
       ]
@@ -164,28 +229,161 @@ export default function MyPortfolioScreen({ navigation }: MyPortfolioScreenProps
   const totalGainLossValue = portfolio?.totalGainLossValue || 0;
   const totalGainLossPct = portfolio?.totalGainLossPct || 0;
   const isPositive = totalGainLossValue >= 0;
+const portfolioDetails = [
+  {
+    title: "Portfolio Name",
+    value: portfolio?.portfolioName || "Not set",
+    icon: "briefcase-outline",
+  },
+  {
+    title: "Base Currency",
+    value: portfolio?.baseCurrency || "Not set",
+    icon: "cash-outline",
+  },
+  {
+    title: "Preferred Market",
+    value: portfolio?.preferredMarket || "Not set",
+    icon: "bar-chart-outline",
+  },
+  {
+    title: "Investment Goal",
+    value: portfolio?.investmentGoal || "Not set",
+    icon: "trending-up-outline",
+  },
+  {
+    title: "Risk Level",
+    value: portfolio?.riskLevel || "Not set",
+    icon: "speedometer-outline",
+  },
+  {
+    title: "Portfolio Visibility",
+    value: portfolio?.visibility || "Not set",
+    icon: "lock-closed-outline",
+  },
+  {
+    title: "Portfolio Alerts",
+    value: portfolio?.alertsEnabled ? "Enabled" : "Disabled",
+    icon: "notifications-outline",
+  },
+];
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.primary || '#3478F6'} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Portfolio</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addBtn}>
-          <Ionicons name="add" size={24} color={COLORS.primary || '#3478F6'} />
-        </TouchableOpacity>
-      </View>
+    <View style={styles.header}>
+  <TouchableOpacity
+    onPress={() => navigation.goBack()}
+    style={styles.headerIcon}
+  >
+    <Ionicons
+      name="chevron-back"
+      size={24}
+      color={COLORS.textMain}
+    />
+  </TouchableOpacity>
+
+  <Text style={styles.headerTitle}>
+    Portfolio
+  </Text>
+
+  <TouchableOpacity
+    onPress={() => setModalVisible(true)}
+    style={styles.headerIcon}
+  >
+    <Ionicons
+      name="add"
+      size={22}
+      color={COLORS.primary}
+    />
+  </TouchableOpacity>
+</View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Summary card */}
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>TOTAL PORTFOLIO VALUE</Text>
-          <Text style={styles.summaryValue}>GHS {totalValue.toFixed(2)}</Text>
-          <Text style={[styles.summaryChange, { color: isPositive ? COLORS.success : COLORS.error }]}>
-            {isPositive ? '+' : ''}{totalGainLossValue.toFixed(2)} ({isPositive ? '+' : ''}{totalGainLossPct.toFixed(2)}%)
+       <View style={styles.summaryCard}>
+
+ <Text style={styles.portfolioName}>
+  {portfolio?.portfolioName || "My Portfolio"}
+</Text>
+
+  <Text style={styles.summaryLabel}>
+    TOTAL VALUE
+  </Text>
+
+  <Text style={styles.summaryValue}>
+    GHS {totalValue.toFixed(2)}
+  </Text>
+
+
+  <View style={styles.gainBadge}>
+    <Ionicons
+      name={isPositive ? "trending-up" : "trending-down"}
+      size={16}
+      color={isPositive ? COLORS.success : COLORS.error}
+    />
+
+    <Text
+      style={[
+        styles.summaryChange,
+        {
+          color: isPositive
+            ? COLORS.success
+            : COLORS.error
+        }
+      ]}
+    >
+      {isPositive ? '+' : ''}
+      {totalGainLossPct.toFixed(2)}%
+      {' Today'}
+    </Text>
+
+  </View>
+
+</View>
+<View style={styles.sectionContainer}>
+
+  <Text style={styles.sectionTitle}>
+    Portfolio Details
+  </Text>
+
+
+  {portfolioDetails.map((item) => (
+
+    <View
+      key={item.title}
+      style={styles.detailRow}
+    >
+
+      <View style={styles.detailLeft}>
+
+        <View style={styles.detailIcon}>
+          <Ionicons
+            name={item.icon as any}
+            size={20}
+            color={COLORS.primary}
+          />
+        </View>
+
+
+        <View>
+          <Text style={styles.detailTitle}>
+            {item.title}
+          </Text>
+
+          <Text style={styles.detailValue}>
+            {item.value}
           </Text>
         </View>
+
+      </View>
+
+
+     
+
+    </View>
+
+  ))}
+
+</View>
 
         {error && (
           <View style={styles.errorBox}>
@@ -247,9 +445,17 @@ export default function MyPortfolioScreen({ navigation }: MyPortfolioScreenProps
       </ScrollView>
 
       {/* Add Holding Modal */}
-      <Modal visible={modalVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+    <Modal 
+  visible={modalVisible} 
+  animationType="slide" 
+  transparent
+>
+  <KeyboardAvoidingView
+    behavior={Platform.OS === "ios" ? "padding" : "height"}
+    style={{ flex: 1 }}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Add Holding</Text>
               <TouchableOpacity onPress={() => { setModalVisible(false); resetForm(); }}>
@@ -298,9 +504,10 @@ export default function MyPortfolioScreen({ navigation }: MyPortfolioScreenProps
                 <Text style={styles.primaryButtonText}>Add Holding</Text>
               )}
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+                 </View>
+      </View>
+    </KeyboardAvoidingView>
+  </Modal>
     </View>
   );
 }
@@ -316,8 +523,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.padding || 16,
     paddingBottom: 16,
   },
-  backBtn: { width: 32 },
-  addBtn: { width: 32, alignItems: 'flex-end' },
+  headerIcon: {
+  width: 40,
+  height: 40,
+  borderRadius: 20,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
   headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textMain || '#FFF' },
   scrollContent: { paddingHorizontal: SIZES.padding || 16, paddingBottom: 40 },
 
@@ -333,6 +545,23 @@ const styles = StyleSheet.create({
   summaryLabel: { color: COLORS.textSecondary || '#7E8494', fontSize: 12, fontWeight: 'bold', letterSpacing: 1, marginBottom: 8 },
   summaryValue: { color: COLORS.textMain || '#FFF', fontSize: 32, fontWeight: '700', marginBottom: 6 },
   summaryChange: { fontSize: 14, fontWeight: '600' },
+  portfolioName: {
+  color: COLORS.textMain || '#FFF',
+  fontSize: 18,
+  fontWeight: '700',
+  marginBottom: 14,
+},
+
+gainBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  marginTop: 12,
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 20,
+  backgroundColor: 'rgba(52,120,246,0.08)',
+},
 
   errorBox: { padding: 16, alignItems: 'center' },
   errorText: { color: COLORS.textSecondary || '#7E8494', fontSize: 14, textAlign: 'center' },
@@ -401,4 +630,56 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
   buttonDisabled: { opacity: 0.6 },
+  sectionContainer:{
+  marginBottom:20,
+},
+
+sectionTitle:{
+  color: COLORS.textMain || "#FFF",
+  fontSize:18,
+  fontWeight:"700",
+  marginBottom:12,
+},
+
+
+detailRow:{
+  backgroundColor: COLORS.surface || "#1C212D",
+  borderRadius:16,
+  padding:14,
+  marginBottom:10,
+  flexDirection:"row",
+  alignItems:"center",
+  justifyContent:"space-between",
+},
+
+
+detailLeft:{
+  flexDirection:"row",
+  alignItems:"center",
+  gap:12,
+},
+
+
+detailIcon:{
+  width:38,
+  height:38,
+  borderRadius:19,
+  backgroundColor:"rgba(52,120,246,0.15)",
+  justifyContent:"center",
+  alignItems:"center",
+},
+
+
+detailTitle:{
+  color: COLORS.textSecondary || "#7E8494",
+  fontSize:12,
+},
+
+
+detailValue:{
+  color: COLORS.textMain || "#FFF",
+  fontSize:14,
+  fontWeight:"600",
+  marginTop:2,
+},
 });
