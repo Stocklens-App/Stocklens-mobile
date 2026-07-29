@@ -69,7 +69,19 @@ const BASE = configuredBase.replace(/\/+$/, '');
 export const IP_ADDRESS = BASE.replace(/^https?:\/\//, '').split(':')[0];
 
 // One shared axios instance — the token lives on it, so every call carries it.
-export const api: AxiosInstance = axios.create({ baseURL: BASE });
+//
+// The timeout is not cosmetic. Axios has none by default, so if the backend is not
+// running — or the phone is on a different network from the laptop — the request
+// never settles. Every screen then sits on its spinner forever with nothing in the
+// UI to explain why. With a timeout the request fails, the catch block runs, and
+// the user sees the "check your connection" message the screens already have.
+//
+// 15s is deliberately generous: long enough for a slow mobile network and a cold
+// Spring Boot start, short enough that nobody sits staring at a spinner wondering.
+export const api: AxiosInstance = axios.create({
+  baseURL: BASE,
+  timeout: 15000,
+});
 
 interface AppContextValue {
   // Auth
