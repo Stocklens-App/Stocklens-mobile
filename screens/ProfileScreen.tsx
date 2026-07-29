@@ -126,6 +126,14 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           />
         </View>
 
+        <TouchableOpacity
+          style={style.actionRow}
+          onPress={() => navigation.navigate('About')}
+        >
+          <Text style={style.actionText}>About StockLens</Text>
+          <Text style={style.chevron}>›</Text>
+        </TouchableOpacity>
+
         {/* Logout Button — clearing the token swaps the navigator back to the
             signed-out stack on its own, so there's no navigate call here. */}
         <TouchableOpacity
@@ -288,4 +296,4 @@ const style = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600'
   }
-});
+});

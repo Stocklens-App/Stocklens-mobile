@@ -21,6 +21,7 @@ import IndexDetailScreen from './screens/IndexDetailScreen';
 import AccountSettingsScreen from './screens/AccountSettingsScreen';
 import MyPortfolioScreen from './screens/MyPortfolioScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
+import AboutScreen from './screens/AboutScreen';
 // @ts-ignore - AppContext is still a plain JS module
 import { AppProvider, useAppContext } from './context/AppContext';
 
@@ -54,6 +55,7 @@ function MainTabNavigator({ route }: MainTabNavigatorProps) {
 
   return (
     <Tab.Navigator
+      id={undefined}
       screenOptions={{
         tabBarActiveTintColor: '#3478F6',
         tabBarInactiveTintColor: '#7E8494',
@@ -124,6 +126,7 @@ function RootNavigator() {
 
   return (
     <Stack.Navigator
+      id={undefined}
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
@@ -148,6 +151,7 @@ function RootNavigator() {
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
           <Stack.Screen name="MyPortfolio" component={MyPortfolioScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="About" component={AboutScreen} />
           <Stack.Screen name="IndexDetail" component={IndexDetailScreen} options={{ title: 'Index Details' }} />
           <Stack.Screen name="StockDetail" component={StockDetailScreen} />
         </>
@@ -177,4 +181,4 @@ export default function App() {
       </NavigationContainer>
     </AppProvider>
   );
-}
+}
