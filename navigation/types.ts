@@ -18,6 +18,7 @@ export type RootStackParamList = {
   AccountSettings: undefined;
   MyPortfolio: undefined;
   Notifications: undefined;
+  About: undefined;
   IndexDetail: { index: MarketIndex };
   StockDetail: { stock: Stock };
 };
@@ -27,4 +28,4 @@ export type MainTabParamList = {
   Invest: undefined;
   Pulse: undefined;
   Learn: undefined;
-};
+};

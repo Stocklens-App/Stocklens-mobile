@@ -9,8 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES } from '../theme';
-// @ts-ignore - AppContext is still a plain JS module
-import { useAppContext, IP_ADDRESS } from '../context/AppContext';
+import { useAppContext, api } from '../context/AppContext';
 
 type NotificationType = 'SCAM_ALERT' | 'PRICE_ALERT' | 'GENERAL';
 
@@ -61,26 +60,24 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchNotifications = useCallback(() => {
+  // These endpoints are behind auth and the server reads the account from the JWT,
+  // so they must go through the shared `api` instance — a bare fetch() carries no
+  // Authorization header and comes back 401. No email parameter is needed either.
+  const fetchNotifications = useCallback(async () => {
     if (!currentUserEmail) {
       setLoading(false);
       return;
     }
     setError(null);
-    fetch(`http://${IP_ADDRESS}:8081/api/notifications?email=${encodeURIComponent(currentUserEmail)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-        return res.json();
-      })
-      .then((data: AppNotification[]) => {
-        setNotifications(data || []);
-        setLoading(false);
-      })
-      .catch((err: Error) => {
-        console.error('Notifications load error:', err.message);
-        setError('Could not load notifications.');
-        setLoading(false);
-      });
+    try {
+      const { data } = await api.get<AppNotification[]>('/api/notifications');
+      setNotifications(data || []);
+    } catch (err) {
+      console.error('Notifications load error:', (err as Error).message);
+      setError('Could not load notifications.');
+    } finally {
+      setLoading(false);
+    }
   }, [currentUserEmail]);
 
   useEffect(() => {
@@ -88,26 +85,27 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
   }, [fetchNotifications]);
 
   const handleMarkAsRead = async (id: number) => {
+    const previous = notifications;
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     try {
-      await fetch(`http://${IP_ADDRESS}:8081/api/notifications/${id}/read`, { method: 'PUT' });
+      await api.put(`/api/notifications/${id}/read`);
       refreshUnreadCount();
-    } catch (err: any) {
-      console.log('Mark as read error:', err.message);
+    } catch (err) {
+      console.log('Mark as read error:', (err as Error).message);
+      setNotifications(previous); // the badge lied — put it back
     }
   };
 
   const handleMarkAllRead = async (): Promise<void> => {
     if (!currentUserEmail) return;
+    const previous = notifications;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
-      await fetch(
-        `http://${IP_ADDRESS}:8081/api/notifications/read-all?email=${encodeURIComponent(currentUserEmail)}`,
-        { method: 'PUT' }
-      );
+      await api.put('/api/notifications/read-all');
       refreshUnreadCount();
-    } catch (err: any) {
-      console.log('Mark all read error:', err.message);
+    } catch (err) {
+      console.log('Mark all read error:', (err as Error).message);
+      setNotifications(previous);
     }
   };
 
@@ -219,4 +217,4 @@ const styles = StyleSheet.create({
 
   errorText: { color: COLORS.textSecondary || '#7E8494', fontSize: 14, textAlign: 'center', paddingHorizontal: 30 },
   emptyText: { color: COLORS.textSecondary || '#7E8494', fontSize: 14 },
-});
+});

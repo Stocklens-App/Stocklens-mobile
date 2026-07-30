@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 // @ts-ignore - utils/registerForPushNotifications is still a plain JS module
 import { registerForPushNotificationsAsync } from '../utils/registerForPushNotifications';
 import type {
@@ -18,13 +19,69 @@ import type {
   AcademicModule,
   UserProfile,
 } from '../types';
-// samuel kept his own ip adress here 
-export const IP_ADDRESS = '10.178.230.167';
 
-const BASE = `http://${IP_ADDRESS}:8081`;
+// Port the Spring backend listens on (see application.properties: server.port).
+const API_PORT = 8081;
+
+// Last-resort value if nothing else resolves.
+const FALLBACK_BASE = `http://localhost:${API_PORT}`;
+
+/**
+ * In development, Expo tells the app which machine served the JS bundle —
+ * Constants.expoConfig.hostUri looks like "192.168.1.42:8082". That host IS the
+ * laptop running Metro, which is also the laptop running the backend, so we can
+ * derive the API URL from it instead of anyone hardcoding an IP.
+ *
+ * This is why the IP no longer has to be edited by hand. Every teammate's phone
+ * resolves their own machine automatically, on whatever network they're on.
+ * Editing one shared constant is what caused the merge conflicts in this file's
+ * history ("samuel kept his own ip adress here").
+ *
+ * Returns null in a production build, where there is no dev server.
+ */
+function baseFromExpoHost(): string | null {
+  const hostUri =
+    Constants.expoConfig?.hostUri ??
+    // Older SDKs / bare workflow keep it here instead.
+    (Constants.expoGoConfig as { debuggerHost?: string } | undefined)?.debuggerHost;
+
+  const host = hostUri?.split(':')[0]?.trim();
+  if (!host) return null;
+  return `http://${host}:${API_PORT}`;
+}
+
+// Resolution order:
+//   1. EXPO_PUBLIC_API_URL              — explicit override; wins (tunnels, staging, CI)
+//   2. Expo's dev-server host           — automatic, correct on any network
+//   3. app.json > expo.extra.apiBaseUrl — for release builds, where there is no dev server
+//   4. FALLBACK_BASE                    — last resort
+const configuredBase: string =
+  process.env.EXPO_PUBLIC_API_URL ||
+  baseFromExpoHost() ||
+  (Constants.expoConfig?.extra as { apiBaseUrl?: string } | undefined)?.apiBaseUrl ||
+  FALLBACK_BASE;
+
+// Trailing slashes would produce '//api/...' once axios joins the paths.
+const BASE = configuredBase.replace(/\/+$/, '');
+
+// Back-compat for screens that still build their own URLs. Prefer the shared `api`
+// instance below — it is the only one that carries the auth token.
+export const IP_ADDRESS = BASE.replace(/^https?:\/\//, '').split(':')[0];
 
 // One shared axios instance — the token lives on it, so every call carries it.
-export const api: AxiosInstance = axios.create({ baseURL: BASE });
+//
+// The timeout is not cosmetic. Axios has none by default, so if the backend is not
+// running — or the phone is on a different network from the laptop — the request
+// never settles. Every screen then sits on its spinner forever with nothing in the
+// UI to explain why. With a timeout the request fails, the catch block runs, and
+// the user sees the "check your connection" message the screens already have.
+//
+// 15s is deliberately generous: long enough for a slow mobile network and a cold
+// Spring Boot start, short enough that nobody sits staring at a spinner wondering.
+export const api: AxiosInstance = axios.create({
+  baseURL: BASE,
+  timeout: 15000,
+});
 
 interface AppContextValue {
   // Auth
@@ -309,4 +366,4 @@ export function useAppContext(): AppContextValue {
 // Backward-compat alias — pre-rewrite screens (e.g. the GSE / IndexDetailScreen)
 // still import useAppData. Same hook, old name. Safe to remove once every screen
 // has been migrated to useAppContext.
-export const useAppData = useAppContext;
+export const useAppData = useAppContext;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useAppContext, IP_ADDRESS } from '../context/AppContext';
+import { useAppContext, api } from '../context/AppContext';
 
 type Module = {
   id: string | number;
@@ -28,14 +28,12 @@ export default function LearnScreen() {
     // Mark this module as completed the first time it's opened.
     // Safe to call every time it's opened — the backend only counts it once.
     if (opening && currentUserEmail) {
-      fetch(`http://${IP_ADDRESS}:8081/api/academic/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUserEmail, moduleId: String(id) }),
-      }).catch((err: Error) => {
-        // Non-critical — don't interrupt reading if this fails.
-        console.log('Module completion tracking error:', err.message);
-      });
+      api
+        .post('/api/academic/complete', { email: currentUserEmail, moduleId: String(id) })
+        .catch((err: Error) => {
+          // Non-critical — don't interrupt reading if this fails.
+          console.log('Module completion tracking error:', err.message);
+        });
     }
   };
 
@@ -255,4 +253,4 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: 'bold'
   }
-});
+});
