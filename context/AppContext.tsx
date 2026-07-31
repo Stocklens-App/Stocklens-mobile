@@ -20,9 +20,9 @@ import type {
 } from '../types';
 
 // current backend IP
-export const IP_ADDRESS = '172.20.10.2';
+// export const IP_ADDRESS = '10.36.12.150';
 
-const BASE = `http://${IP_ADDRESS}:8081`;
+const BASE = `https://backend-production-ec63.up.railway.app`;
 
 // One shared axios instance — the token lives on it, so every call carries it.
 export const api: AxiosInstance = axios.create({ baseURL: BASE });
