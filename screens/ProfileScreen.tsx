@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Switch, ActivityIndicator, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Switch, ActivityIndicator, ScrollView, Image, Alert } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SIZES, ThemeColors } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 // @ts-ignore - AppContext is still a plain JS module
 import { useAppContext, api } from '../context/AppContext';
+
+// Install-guarded import: the screen still works if expo-image-picker isn't installed.
+let ImagePicker: typeof import('expo-image-picker') | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  ImagePicker = require('expo-image-picker');
+} catch {
+  ImagePicker = null;
+}
 
 interface UserData {
   name?: string;
@@ -26,7 +37,12 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const { token, notificationsEnabled, toggleNotifications, signOut } = useAppContext();
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const { token, currentUserEmail, notificationsEnabled, toggleNotifications, signOut } = useAppContext();
+
+  // Photo is stored per-user under a key tied to their email, so two accounts
+  // on the same phone don't share a picture.
+  const photoKey = currentUserEmail ? `profilePhoto:${currentUserEmail}` : 'profilePhoto:anon';
 
   useEffect(() => {
     if (!token) {
@@ -44,6 +60,43 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       });
   }, [token]);
 
+  // Restore a previously saved photo for this user.
+  useEffect(() => {
+    AsyncStorage.getItem(photoKey)
+      .then((uri) => { if (uri) setPhotoUri(uri); })
+      .catch(() => {});
+  }, [photoKey]);
+
+  const handlePickPhoto = async () => {
+    if (!ImagePicker) {
+      Alert.alert(
+        'Not available',
+        'Photo picker isn\'t installed in this build. Run "npx expo install expo-image-picker" and reload.'
+      );
+      return;
+    }
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Permission needed', 'Allow photo access to set a profile picture.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.6,
+      });
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        const uri = result.assets[0].uri;
+        setPhotoUri(uri);
+        AsyncStorage.setItem(photoKey, uri).catch(() => {});
+      }
+    } catch (err: any) {
+      Alert.alert('Could not open photos', err.message);
+    }
+  };
+
   const totalModules = 80;
   const progressPercent = userData?.modulesCompleted
     ? (userData.modulesCompleted / totalModules) * 100
@@ -57,94 +110,114 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     );
   }
 
+  const initial = userData?.name ? userData.name[0].toUpperCase() : 'U';
+
   return (
     <View style={style.container}>
       <ScrollView contentContainerStyle={style.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* User Identity Section */}
+        {/* Identity */}
         <View style={style.profileSection}>
-          <View style={style.avatar}>
-            <Text style={style.avatarText}>{userData?.name ? userData.name[0] : 'U'}</Text>
-          </View>
+          <TouchableOpacity style={style.avatarWrap} onPress={handlePickPhoto} activeOpacity={0.8}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={style.avatarImg} />
+            ) : (
+              <View style={style.avatar}>
+                <Text style={style.avatarText}>{initial}</Text>
+              </View>
+            )}
+            <View style={style.cameraBadge}>
+              <Ionicons name="camera" size={14} color="#FFFFFF" />
+            </View>
+          </TouchableOpacity>
           <Text style={style.name}>{userData?.name}</Text>
           <Text style={style.email}>{userData?.email}</Text>
         </View>
 
-        {/* Learning Progress Card */}
+        {/* Learning Progress */}
         <View style={style.card}>
           <View style={style.cardHeaderRow}>
             <Text style={style.cardTitle}>LEARNING PROGRESS</Text>
-            <Text style={style.cardMetricValue}>{userData?.modulesCompleted} / {totalModules}</Text>
+            <Text style={style.metricMono}>{userData?.modulesCompleted ?? 0} / {totalModules}</Text>
           </View>
-          <Text style={style.subTextLabel}>Modules Completed</Text>
+          <Text style={style.subTextLabel}>Modules completed</Text>
           <View style={style.progressBarTrack}>
             <View style={[style.progressBarFill, { width: `${progressPercent}%` }]} />
           </View>
           <View style={style.streakRow}>
-            <Text style={style.streakIcon}>📅🔥</Text>
+            <View style={style.streakIconWrap}>
+              <Ionicons name="flame" size={18} color={colors.primary} />
+            </View>
             <View>
-              <Text style={style.streakText}>{userData?.streakDays} Days</Text>
-              <Text style={style.subTextLabel}>Current Streak</Text>
+              <Text style={style.streakValue}>
+                <Text style={style.mono}>{userData?.streakDays ?? 0}</Text> days
+              </Text>
+              <Text style={style.subTextLabel}>Current streak</Text>
             </View>
           </View>
         </View>
 
-        {/* Portfolio Summary Card */}
+        {/* Portfolio Summary */}
         <View style={style.card}>
-          <Text style={style.cardTitle}>PORTFOLIO SUMMARY</Text>
+          <Text style={style.cardTitle}>PORTFOLIO VALUE</Text>
           <View style={style.portfolioRow}>
             <View>
-              <Text style={style.portfolioValue}>GHS {userData?.portfolioValue?.toFixed(2)}</Text>
-              <Text style={style.portfolioReturn}>+{userData?.portfolioReturnPct}% ↗</Text>
+              <Text style={style.portfolioValue}>GH₵ {(userData?.portfolioValue ?? 0).toFixed(2)}</Text>
+              <Text style={style.portfolioReturn}>
+                +{userData?.portfolioReturnPct ?? 0}% <Ionicons name="trending-up" size={13} color={colors.success} />
+              </Text>
             </View>
-            <Text style={style.sparklineGraphic}>📈</Text>
+            <Ionicons name="stats-chart" size={30} color={colors.textSecondary} />
           </View>
         </View>
 
-        {/* Options Rows */}
-        <TouchableOpacity
-          style={style.actionRow}
-          onPress={() => navigation.navigate('AccountSettings')}
-        >
-          <Text style={style.actionText}>Account Settings ›</Text>
-          <Text style={style.chevron}>∨</Text>
+        {/* Actions */}
+        <TouchableOpacity style={style.actionRow} onPress={() => navigation.navigate('AccountSettings')} activeOpacity={0.7}>
+          <View style={style.actionLeft}>
+            <Ionicons name="settings-outline" size={20} color={colors.primary} />
+            <Text style={style.actionText}>Account Settings</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={style.actionRow}
-          onPress={() => navigation.navigate('MyPortfolio')}
-        >
-          <Text style={style.actionText}>My Portfolio</Text>
-          <Text style={style.chevron}>∨</Text>
+        <TouchableOpacity style={style.actionRow} onPress={() => navigation.navigate('MyPortfolio')} activeOpacity={0.7}>
+          <View style={style.actionLeft}>
+            <Ionicons name="briefcase-outline" size={20} color={colors.primary} />
+            <Text style={style.actionText}>My Portfolio</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
 
-        {/* Appearance — dark / light toggle */}
+        {/* Dark Mode */}
         <View style={style.actionRow}>
-          <Text style={style.actionText}>Dark Mode</Text>
+          <View style={style.actionLeft}>
+            <Ionicons name={isDark ? 'moon' : 'sunny'} size={20} color={colors.primary} />
+            <Text style={style.actionText}>Dark Mode</Text>
+          </View>
           <Switch
             value={isDark}
             onValueChange={toggleTheme}
             trackColor={{ false: '#B8C2D0', true: colors.primary }}
-            thumbColor={'#FFF'}
+            thumbColor={'#FFFFFF'}
           />
         </View>
 
+        {/* Notifications */}
         <View style={style.actionRow}>
-          <Text style={style.actionText}>Notifications</Text>
+          <View style={style.actionLeft}>
+            <Ionicons name="notifications-outline" size={20} color={colors.primary} />
+            <Text style={style.actionText}>Notifications</Text>
+          </View>
           <Switch
             value={notificationsEnabled}
             onValueChange={toggleNotifications}
             trackColor={{ false: '#B8C2D0', true: colors.primary }}
-            thumbColor={'#FFF'}
+            thumbColor={'#FFFFFF'}
           />
         </View>
 
-        {/* Logout — clearing the token swaps the navigator back to the
-            signed-out stack on its own, so there's no navigate call here. */}
-        <TouchableOpacity
-          style={style.logoutButton}
-          onPress={signOut}
-        >
-          <Text style={style.logoutText}>Log Out Account</Text>
+        {/* Logout */}
+        <TouchableOpacity style={style.logoutButton} onPress={signOut} activeOpacity={0.8}>
+          <Text style={style.logoutText}>Log Out</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -153,22 +226,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
 const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: c.background,
-    },
-    center: {
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    scrollContent: {
-      paddingHorizontal: SIZES.padding,
-      paddingBottom: 40,
-    },
-    profileSection: {
-      alignItems: 'center',
-      marginVertical: 20,
-    },
+    container: { flex: 1, backgroundColor: c.background },
+    center: { justifyContent: 'center', alignItems: 'center' },
+    scrollContent: { paddingHorizontal: SIZES.padding, paddingBottom: 40 },
+    profileSection: { alignItems: 'center', marginVertical: 24 },
+    avatarWrap: { marginBottom: 16 },
     avatar: {
       width: 100,
       height: 100,
@@ -176,129 +238,86 @@ const makeStyles = (c: ThemeColors) =>
       backgroundColor: c.primary,
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 16,
     },
-    avatarText: {
-      color: '#FFFFFF',
-      fontSize: 44,
-      fontWeight: 'bold',
+    avatarImg: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: c.surface,
     },
-    name: {
-      color: c.textMain,
-      fontSize: 24,
-      fontWeight: 'bold',
+    avatarText: { color: '#FFFFFF', fontSize: 44, fontWeight: 'bold' },
+    cameraBadge: {
+      position: 'absolute',
+      right: 2,
+      bottom: 2,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 3,
+      borderColor: c.background,
     },
-    username: {
-      color: c.textSecondary,
-      fontSize: 16,
-      marginTop: 4,
-    },
-    email: {
-      color: c.textSecondary,
-      fontSize: 14,
-      marginTop: 2,
-    },
+    name: { color: c.textMain, fontSize: 24, fontWeight: 'bold' },
+    email: { color: c.textSecondary, fontSize: 14, marginTop: 2 },
     card: {
       backgroundColor: c.surface,
-      borderRadius: SIZES.radius,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
       padding: 18,
       marginBottom: 16,
     },
-    cardHeaderRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-    },
-    cardTitle: {
-      color: c.textSecondary,
-      fontSize: 12,
-      fontWeight: 'bold',
-      letterSpacing: 1,
-    },
-    cardMetricValue: {
+    cardHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    cardTitle: { color: c.textSecondary, fontSize: 12, fontWeight: 'bold', letterSpacing: 1 },
+    metricMono: {
       color: c.textMain,
       fontSize: 18,
-      fontWeight: 'bold',
+      fontWeight: '700',
+      fontVariant: ['tabular-nums'],
     },
-    subTextLabel: {
-      color: c.textSecondary,
-      fontSize: 12,
-      marginTop: 2,
-    },
-    progressBarTrack: {
-      height: 6,
-      backgroundColor: c.border,
-      borderRadius: 3,
-      marginVertical: 12,
-    },
-    progressBarFill: {
-      height: 6,
-      backgroundColor: c.primary,
-      borderRadius: 3,
-    },
-    streakRow: {
-      flexDirection: 'row',
+    mono: { fontVariant: ['tabular-nums'] },
+    subTextLabel: { color: c.textSecondary, fontSize: 12, marginTop: 2 },
+    progressBarTrack: { height: 6, backgroundColor: c.border, borderRadius: 3, marginVertical: 12 },
+    progressBarFill: { height: 6, backgroundColor: c.primary, borderRadius: 3 },
+    streakRow: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 12 },
+    streakIconWrap: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: c.background,
       alignItems: 'center',
-      marginTop: 8,
+      justifyContent: 'center',
     },
-    streakIcon: {
-      fontSize: 24,
-      marginRight: 12,
-    },
-    streakText: {
-      color: c.textMain,
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
-    portfolioRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginTop: 8,
-    },
+    streakValue: { color: c.textMain, fontSize: 16, fontWeight: 'bold' },
+    portfolioRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
     portfolioValue: {
       color: c.textMain,
-      fontSize: 24,
+      fontSize: 26,
       fontWeight: 'bold',
+      fontVariant: ['tabular-nums'],
     },
-    portfolioReturn: {
-      color: c.success,
-      fontSize: 14,
-      fontWeight: '600',
-      marginTop: 4,
-    },
-    sparklineGraphic: {
-      fontSize: 32,
-    },
+    portfolioReturn: { color: c.success, fontSize: 14, fontWeight: '600', marginTop: 4 },
     actionRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       backgroundColor: c.surface,
-      borderRadius: SIZES.radius,
-      padding: 18,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 16,
       marginBottom: 12,
     },
-    actionText: {
-      color: c.textMain,
-      fontSize: 16,
-      fontWeight: '500',
-    },
-    chevron: {
-      color: c.textSecondary,
-      fontSize: 14,
-    },
+    actionLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    actionText: { color: c.textMain, fontSize: 15, fontWeight: '500' },
     logoutButton: {
       backgroundColor: c.error,
       paddingVertical: 14,
-      borderRadius: SIZES.radius,
-      width: '100%',
+      borderRadius: 14,
       alignItems: 'center',
       marginTop: 20,
     },
-    logoutText: {
-      color: '#FFFFFF',
-      fontSize: 16,
-      fontWeight: '600',
-    },
+    logoutText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
   });
