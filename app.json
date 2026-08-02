@@ -1,11 +1,16 @@
 {
   "expo": {
-    "name": "stocklens-mobile",
+    "name": "StockLens",
     "slug": "stocklens-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#11141A"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -13,7 +18,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "package": "com.stocklens.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0B0F17",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

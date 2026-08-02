@@ -7,6 +7,7 @@ import {
   StyleSheet,
   StatusBar,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline } from 'react-native-svg';
@@ -81,8 +82,7 @@ interface DashboardScreenProps {
 export default function DashboardScreen({ route, navigation }: DashboardScreenProps) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
-
-  const { userName: contextName, stocks, stocksLoading, stocksError, scamAlerts, unreadCount } = useAppContext();
+  const { userName: contextName, stocks, stocksLoading, stocksError, scamAlerts, unreadCount, profilePhoto } = useAppContext();
 
   const rawName = route?.params?.userName || contextName || 'User';
   const firstName = rawName.trim().split(' ')[0];
@@ -146,15 +146,18 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
             onPress={() => navigation.navigate('Profile')}
             activeOpacity={0.6}
           >
-            <View style={styles.avatarCircle}>
-              <Ionicons name="person" size={20} color="#FFFFFF" />
-            </View>
+            {profilePhoto ? (
+              <Image source={{ uri: profilePhoto }} style={styles.avatarCircle} />
+            ) : (
+              <View style={styles.avatarCircle}>
+                <Ionicons name="person" size={20} color="#FFFFFF" />
+              </View>
+            )}
             <View>
               <Text style={styles.greeting}>{greeting()}</Text>
               <Text style={styles.userName}>{firstName}</Text>
             </View>
           </TouchableOpacity>
-
           <TouchableOpacity
             style={styles.bellButton}
             onPress={() => navigation.navigate('Notifications')}
@@ -285,7 +288,7 @@ const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: c.background },
     scroll: { flex: 1 },
-    scrollContent: { padding: SIZES.padding, paddingTop: 60, paddingBottom: 40 },
+    scrollContent: { padding: SIZES.padding, paddingTop: 40, paddingBottom: 40 },
     loadingContainer: {
       flex: 1,
       backgroundColor: c.background,

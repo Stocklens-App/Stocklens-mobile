@@ -21,7 +21,6 @@ import type {
 
 // current backend IP
 // export const IP_ADDRESS = '10.36.12.150';
-
 const BASE = `https://backend-production-ec63.up.railway.app`;
 
 // One shared axios instance — the token lives on it, so every call carries it.
@@ -35,6 +34,9 @@ interface AppContextValue {
   signOut: () => Promise<void>;
   currentUserEmail: string | null;
   userName: string | null;
+  profilePhoto: string | null;
+  updateProfilePhoto: (dataUri: string | null) => Promise<void>;
+
   // Home
   marketIndices: MarketIndex[];
   trendingStocks: TrendingStock[];
@@ -42,16 +44,19 @@ interface AppContextValue {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
+
   // Notifications
   notificationsEnabled: boolean;
   toggleNotifications: (enabled: boolean) => Promise<void>;
   unreadCount: number;
   refreshUnreadCount: () => Promise<void>;
+
   // Stocks
   stocks: Stock[];
   stocksLoading: boolean;
   stocksError: string | null;
   refetchStocks: () => Promise<void>;
+
   // Learn
   modules: AcademicModule[];
   modulesLoading: boolean;
@@ -70,6 +75,7 @@ export function AppProvider({ children }: AppProviderProps) {
   const [token, setToken] = useState<string | null>(null);
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
   const [booting, setBooting] = useState<boolean>(true); // still reading stored session
 
   // ── Home tab data ──
@@ -99,6 +105,7 @@ export function AppProvider({ children }: AppProviderProps) {
     setToken(null);
     setCurrentUserEmail(null);
     setUserName(null);
+    setProfilePhoto(null);
     setMarketIndices([]);
     setTrendingStocks([]);
     setScamAlerts([]);
@@ -223,17 +230,16 @@ export function AppProvider({ children }: AppProviderProps) {
     refreshUnreadCount();
   }, [token, fetchHomeData, fetchStocks, fetchModules, refreshUnreadCount]);
 
-  // Load the signed-in user's notification preference and register for push.
+  // Load the signed-in user's profile — notification preference, photo, push.
   useEffect(() => {
     if (!token) return;
-
     api
       .get<UserProfile>('/api/users/profile')
       .then(({ data }) => {
         if (!data) return;
         setNotificationsEnabled(!!data.notificationsEnabled);
         if (data.name) setUserName(data.name);
-
+        setProfilePhoto(data.profilePhoto ?? null);
         if (data.notificationsEnabled) {
           registerForPushNotificationsAsync().then((pushToken: string | null) => {
             if (pushToken) {
@@ -247,9 +253,9 @@ export function AppProvider({ children }: AppProviderProps) {
       .catch((err: Error) => console.log('Profile load error (notifications):', err.message));
   }, [token]);
 
- const toggleNotifications = async (enabled: boolean): Promise<void> => {
-   setNotificationsEnabled(enabled); // optimistic
-   try {
+  const toggleNotifications = async (enabled: boolean): Promise<void> => {
+    setNotificationsEnabled(enabled); // optimistic
+    try {
       await api.put('/api/users/notifications', { enabled });
     } catch (err) {
       console.log('Toggle notifications error:', (err as Error).message);
@@ -259,14 +265,26 @@ export function AppProvider({ children }: AppProviderProps) {
     // Best-effort push registration. Fails in Expo Go (unsupported since SDK 53),
     // works in the built APK. Must never revert the saved preference.
     if (enabled) {
-     try {
-       const pushToken = await registerForPushNotificationsAsync();
-       if (pushToken) {
-         await api.post('/api/users/push-token', { pushToken });
-       }
+      try {
+        const pushToken = await registerForPushNotificationsAsync();
+        if (pushToken) {
+          await api.post('/api/users/push-token', { pushToken });
+        }
       } catch (err) {
         console.log('Push registration skipped (unsupported in Expo Go):', (err as Error).message);
       }
+    }
+  };
+
+  const updateProfilePhoto = async (dataUri: string | null): Promise<void> => {
+    const previous = profilePhoto;
+    setProfilePhoto(dataUri); // optimistic
+    try {
+      await api.put('/api/users/photo', { photo: dataUri ?? '' });
+    } catch (err) {
+      console.log('Update profile photo error:', (err as Error).message);
+      setProfilePhoto(previous); // revert on failure
+      throw err; // let the screen surface an alert
     }
   };
 
@@ -278,6 +296,9 @@ export function AppProvider({ children }: AppProviderProps) {
     signOut,
     currentUserEmail,
     userName,
+    profilePhoto,
+    updateProfilePhoto,
+
     // Home
     marketIndices,
     trendingStocks,
@@ -285,16 +306,19 @@ export function AppProvider({ children }: AppProviderProps) {
     loading,
     error,
     refetch: fetchHomeData,
+
     // Notifications
     notificationsEnabled,
     toggleNotifications,
     unreadCount,
     refreshUnreadCount,
+
     // Stocks
     stocks,
     stocksLoading,
     stocksError,
     refetchStocks: fetchStocks,
+
     // Learn
     modules,
     modulesLoading,
@@ -306,14 +330,12 @@ export function AppProvider({ children }: AppProviderProps) {
 }
 
 export function useAppContext(): AppContextValue {
-  const context = useContext(AppContext);
-  if (context === undefined) {
+  const ctx = useContext(AppContext);
+  if (!ctx) {
     throw new Error('useAppContext must be used within an AppProvider');
   }
-  return context;
+  return ctx;
 }
 
-// Backward-compat alias — pre-rewrite screens (e.g. the GSE / IndexDetailScreen)
-// still import useAppData. Same hook, old name. Safe to remove once every screen
-// has been migrated to useAppContext.
+// Backwards-compatible alias — older screens imported useAppData.
 export const useAppData = useAppContext;

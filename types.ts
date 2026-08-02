@@ -80,4 +80,5 @@ export interface UserProfile {
   portfolioReturnPct?: number;
   notificationsEnabled?: boolean;
   pushToken?: string | null;
+  profilePhoto?: string | null;
 }
