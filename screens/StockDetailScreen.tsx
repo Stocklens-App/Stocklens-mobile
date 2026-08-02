@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { api } from '../context/AppContext';
 import Svg, { Polyline, Path, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 const CHART_WIDTH = 320;
 const CHART_HEIGHT = 160;
@@ -81,7 +82,7 @@ const initialsForBroker = (name: string): string => {
 
 // GHS 92,388,501,849 → "GHS 92.39B"
 const formatCompact = (value?: number | null): string => {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return '---';
   const abs = Math.abs(value);
   if (abs >= 1_000_000_000) return `GHS ${(value / 1_000_000_000).toFixed(2)}B`;
   if (abs >= 1_000_000) return `GHS ${(value / 1_000_000).toFixed(2)}M`;
@@ -90,13 +91,16 @@ const formatCompact = (value?: number | null): string => {
 };
 
 const formatCount = (value?: number | null): string => {
-  if (value === null || value === undefined) return '—';
+  if (value === null || value === undefined) return '---';
   return value.toLocaleString();
 };
 
 export default function StockDetailScreen({ route, navigation }: StockDetailScreenProps) {
-const { stock: initialStock } = route!.params;
-const [stock, setStock] = useState<Stock>(initialStock);
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
+  const { stock: initialStock } = route!.params;
+  const [stock, setStock] = useState<Stock>(initialStock);
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [showAllBrokers, setShowAllBrokers] = useState(false);
 
@@ -114,7 +118,7 @@ const [stock, setStock] = useState<Stock>(initialStock);
   }, [initialStock.symbol]);
 
   const isUp = stock.priceChangePercentage >= 0;
-  const changeColor = isUp ? COLORS.success : COLORS.error;
+  const changeColor = isUp ? colors.success : colors.error;
   const arrow = isUp ? '↑' : '↓';
 
   // Change value in currency (approx from percentage and current price)
@@ -123,27 +127,22 @@ const [stock, setStock] = useState<Stock>(initialStock);
   const buildChartData = () => {
     const history = stock.history;
     if (!history || history.length < 2) return null;
-
     const min = Math.min(...history);
     const max = Math.max(...history);
     const range = max - min || 1;
     const padding = 8;
-
     const points = history.map((value, index) => {
       const x = (index / (history.length - 1)) * (CHART_WIDTH - padding * 2) + padding;
       const y = CHART_HEIGHT - padding - ((value - min) / range) * (CHART_HEIGHT - padding * 2);
       return { x, y };
     });
-
     const linePoints = points.map(p => `${p.x},${p.y}`).join(' ');
-
     const firstX = points[0].x;
     const lastX = points[points.length - 1].x;
     const bottomY = CHART_HEIGHT - padding;
     const areaPath = `M ${firstX},${points[0].y} ` +
                      points.slice(1).map(p => `L ${p.x},${p.y}`).join(' ') +
                      ` L ${lastX},${bottomY} L ${firstX},${bottomY} Z`;
-
     return { linePoints, areaPath };
   };
 
@@ -179,7 +178,7 @@ const [stock, setStock] = useState<Stock>(initialStock);
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle={isDarkBar(colors) ? 'light-content' : 'dark-content'} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -198,7 +197,7 @@ const [stock, setStock] = useState<Stock>(initialStock);
       >
         {/* Identity row: logo + symbol/name in a row */}
         <View style={styles.identityRow}>
-          <View style={[styles.logo, { backgroundColor: stock.logoColor || COLORS.surface }]}>
+          <View style={[styles.logo, { backgroundColor: stock.logoColor || colors.surface }]}>
             <Text style={styles.logoText}>{stock.symbol.slice(0, 3)}</Text>
           </View>
           <View style={styles.identityText}>
@@ -259,7 +258,7 @@ const [stock, setStock] = useState<Stock>(initialStock);
               </View>
               <View style={styles.statCell}>
                 <Text style={styles.statLabel}>Industry</Text>
-                <Text style={styles.statValue} numberOfLines={2}>{stock.industry || '—'}</Text>
+                <Text style={styles.statValue} numberOfLines={2}>{stock.industry || '---'}</Text>
               </View>
             </View>
             <Text style={styles.sourceNote}>Source: Ghana Stock Exchange</Text>
@@ -270,14 +269,12 @@ const [stock, setStock] = useState<Stock>(initialStock);
         {hasContactInfo && (
           <View style={styles.infoCard}>
             <Text style={styles.infoTitle}>OFFICIAL COMPANY DETAILS</Text>
-
             {stock.website ? (
               <TouchableOpacity style={styles.contactRow} onPress={() => openUrl(stock.website)} activeOpacity={0.6}>
                 <Text style={styles.contactLabel}>Website</Text>
                 <Text style={[styles.contactValue, styles.contactLink]} numberOfLines={1}>{stock.website}</Text>
               </TouchableOpacity>
             ) : null}
-
             {stock.telephone ? (
               <TouchableOpacity
                 style={styles.contactRow}
@@ -288,14 +285,12 @@ const [stock, setStock] = useState<Stock>(initialStock);
                 <Text style={[styles.contactValue, styles.contactLink]} numberOfLines={1}>{stock.telephone}</Text>
               </TouchableOpacity>
             ) : null}
-
             {stock.companyEmail ? (
               <View style={styles.contactRow}>
                 <Text style={styles.contactLabel}>Email</Text>
                 <Text style={styles.contactValue} numberOfLines={1}>{stock.companyEmail}</Text>
               </View>
             ) : null}
-
             {stock.address ? (
               <View style={styles.contactRow}>
                 <Text style={styles.contactLabel}>Address</Text>
@@ -337,7 +332,6 @@ const [stock, setStock] = useState<Stock>(initialStock);
                     <View style={[styles.brokerLogo, { backgroundColor: colorForBroker(broker.name) }]}>
                       <Text style={styles.brokerLogoText}>{initialsForBroker(broker.name)}</Text>
                     </View>
-
                     <View style={styles.brokerInfo}>
                       <Text style={styles.brokerName} numberOfLines={1}>{broker.name}</Text>
                       <View style={styles.brokerLicense}>
@@ -345,7 +339,6 @@ const [stock, setStock] = useState<Stock>(initialStock);
                         <Text style={styles.licenseText} numberOfLines={1}>{action.label}</Text>
                       </View>
                     </View>
-
                     <Text style={styles.externalIcon}>›</Text>
                   </TouchableOpacity>
                 );
@@ -383,267 +376,269 @@ const [stock, setStock] = useState<Stock>(initialStock);
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  header: {
-    flexDirection: 'row',
-    paddingHorizontal: SIZES.padding,
-    paddingTop: 52,
-    paddingBottom: 8,
-  },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: COLORS.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconText: {
-    color: COLORS.textMain,
-    fontSize: 26,
-    lineHeight: 26,
-    marginTop: -3,
-  },
-  scrollContent: {
-    paddingHorizontal: SIZES.padding,
-    paddingBottom: 40,
-  },
-  identityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 20,
-    gap: 12,
-  },
-  logo: {
-    width: 56,
-    height: 56,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 15,
-    letterSpacing: 0.5,
-  },
-  identityText: {
-    flex: 1,
-  },
-  symbol: {
-    color: COLORS.textMain,
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    marginTop: 2,
-  },
-  priceBlock: {
-    marginBottom: 20,
-  },
-  price: {
-    color: COLORS.textMain,
-    fontSize: 44,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    letterSpacing: -1,
-  },
-  priceSubtitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 6,
-  },
-  chartCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
+// Status bar text should be light on a dark background, dark on a light one.
+const isDarkBar = (c: ThemeColors) => c.background === '#11141A';
 
-  infoCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  infoTitle: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 14,
-  },
-  statGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  statCell: {
-    width: '50%',
-    marginBottom: 14,
-    paddingRight: 8,
-  },
-  statLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    marginBottom: 3,
-  },
-  statValue: {
-    color: COLORS.textMain,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  sourceNote: {
-    color: COLORS.textSecondary,
-    fontSize: 10,
-    fontStyle: 'italic',
-  },
-  contactRow: {
-    marginBottom: 12,
-  },
-  contactLabel: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    marginBottom: 3,
-  },
-  contactValue: {
-    color: COLORS.textMain,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  contactLink: {
-    color: COLORS.primary,
-  },
-
-  protectionCard: {
-    backgroundColor: 'rgba(33, 208, 122, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(33, 208, 122, 0.4)',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 22,
-  },
-  protectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
-  },
-  protectionShield: {
-    fontSize: 14,
-  },
-  protectionTitle: {
-    color: COLORS.success,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  protectionBody: {
-    color: COLORS.textMain,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  brokersSection: {
-    marginTop: 4,
-  },
-  brokersCount: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    fontWeight: '500',
-    marginBottom: 12,
-  },
-  brokerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginBottom: 10,
-    gap: 12,
-  },
-  brokerLogo: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brokerLogoText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  brokerInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-  brokerName: {
-    color: COLORS.textMain,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  brokerLicense: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 3,
-    gap: 4,
-  },
-  licenseCheck: {
-    color: COLORS.success,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  licenseText: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    flexShrink: 1,
-  },
-  externalIcon: {
-    color: COLORS.textSecondary,
-    fontSize: 22,
-    fontWeight: '400',
-  },
-  showAllButton: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginTop: 2,
-    marginBottom: 12,
-  },
-  showAllText: {
-    color: COLORS.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  registerNote: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    lineHeight: 16,
-    fontStyle: 'italic',
-    marginBottom: 8,
-  },
-  brokersEmpty: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    paddingVertical: 20,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-  },
-  brokersEmptyText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      flexDirection: 'row',
+      paddingHorizontal: SIZES.padding,
+      paddingTop: 52,
+      paddingBottom: 8,
+    },
+    iconButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    iconText: {
+      color: c.textMain,
+      fontSize: 26,
+      lineHeight: 26,
+      marginTop: -3,
+    },
+    scrollContent: {
+      paddingHorizontal: SIZES.padding,
+      paddingBottom: 40,
+    },
+    identityRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 12,
+      marginBottom: 20,
+      gap: 12,
+    },
+    logo: {
+      width: 56,
+      height: 56,
+      borderRadius: 14,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoText: {
+      color: '#FFFFFF',
+      fontWeight: '700',
+      fontSize: 15,
+      letterSpacing: 0.5,
+    },
+    identityText: {
+      flex: 1,
+    },
+    symbol: {
+      color: c.textMain,
+      fontSize: 22,
+      fontWeight: '700',
+    },
+    subtitle: {
+      color: c.textSecondary,
+      fontSize: 13,
+      marginTop: 2,
+    },
+    priceBlock: {
+      marginBottom: 20,
+    },
+    price: {
+      color: c.textMain,
+      fontSize: 44,
+      fontWeight: '700',
+      fontFamily: 'Georgia',
+      letterSpacing: -1,
+    },
+    priceSubtitle: {
+      fontSize: 13,
+      fontWeight: '600',
+      marginTop: 6,
+    },
+    chartCard: {
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      padding: 12,
+      marginBottom: 20,
+      alignItems: 'center',
+    },
+    infoCard: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      padding: 16,
+      marginBottom: 16,
+    },
+    infoTitle: {
+      color: c.textSecondary,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1,
+      marginBottom: 14,
+    },
+    statGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    statCell: {
+      width: '50%',
+      marginBottom: 14,
+      paddingRight: 8,
+    },
+    statLabel: {
+      color: c.textSecondary,
+      fontSize: 11,
+      marginBottom: 3,
+    },
+    statValue: {
+      color: c.textMain,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    sourceNote: {
+      color: c.textSecondary,
+      fontSize: 10,
+      fontStyle: 'italic',
+    },
+    contactRow: {
+      marginBottom: 12,
+    },
+    contactLabel: {
+      color: c.textSecondary,
+      fontSize: 11,
+      marginBottom: 3,
+    },
+    contactValue: {
+      color: c.textMain,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    contactLink: {
+      color: c.primary,
+    },
+    protectionCard: {
+      backgroundColor: 'rgba(33, 208, 122, 0.08)',
+      borderWidth: 1,
+      borderColor: 'rgba(33, 208, 122, 0.4)',
+      borderRadius: 12,
+      padding: 14,
+      marginBottom: 22,
+    },
+    protectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 6,
+    },
+    protectionShield: {
+      fontSize: 14,
+    },
+    protectionTitle: {
+      color: c.success,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1,
+    },
+    protectionBody: {
+      color: c.textMain,
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    brokersSection: {
+      marginTop: 4,
+    },
+    brokersCount: {
+      color: c.textSecondary,
+      fontSize: 13,
+      fontWeight: '500',
+      marginBottom: 12,
+    },
+    brokerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 12,
+      marginBottom: 10,
+      gap: 12,
+    },
+    brokerLogo: {
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    brokerLogoText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
+    brokerInfo: {
+      flex: 1,
+      minWidth: 0,
+    },
+    brokerName: {
+      color: c.textMain,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    brokerLicense: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 3,
+      gap: 4,
+    },
+    licenseCheck: {
+      color: c.success,
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    licenseText: {
+      color: c.textSecondary,
+      fontSize: 12,
+      flexShrink: 1,
+    },
+    externalIcon: {
+      color: c.textSecondary,
+      fontSize: 22,
+      fontWeight: '400',
+    },
+    showAllButton: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      paddingVertical: 12,
+      alignItems: 'center',
+      marginTop: 2,
+      marginBottom: 12,
+    },
+    showAllText: {
+      color: c.primary,
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    registerNote: {
+      color: c.textSecondary,
+      fontSize: 11,
+      lineHeight: 16,
+      fontStyle: 'italic',
+      marginBottom: 8,
+    },
+    brokersEmpty: {
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      paddingVertical: 20,
+      paddingHorizontal: 14,
+      alignItems: 'center',
+    },
+    brokersEmptyText: {
+      color: c.textSecondary,
+      fontSize: 13,
+    },
+  });

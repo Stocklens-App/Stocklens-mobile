@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 // @ts-ignore - AppContext is still a plain JS module
 import { api } from '../context/AppContext';
 import { validateEmail, validateOtp, validatePassword, sanitizeDigits } from '../utils/validation';
@@ -24,6 +25,9 @@ interface ForgotPasswordScreenProps {
 }
 
 export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) {
+  const { colors } = useTheme();
+  const style = makeStyles(colors);
+
   // step 1 = enter email, step 2 = code + new password
   const [step, setStep] = useState<1 | 2>(1);
   const [email, setEmail] = useState<string>('');
@@ -42,7 +46,6 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
       Alert.alert('Check your details', emailError);
       return;
     }
-
     setLoading(true);
     try {
       await api.post('/auth/forgot-password', { email: email.trim().toLowerCase() });
@@ -79,7 +82,6 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
       Alert.alert('Check your details', 'Passwords do not match.');
       return;
     }
-
     setLoading(true);
     try {
       await api.post('/auth/reset-password', {
@@ -87,7 +89,6 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
         code: code.trim(),
         newPassword: newPassword.trim(),
       });
-
       Alert.alert('Success', 'Your password has been reset. Please sign in.', [
         {
           text: 'OK',
@@ -104,23 +105,21 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
   return (
     <View style={style.container}>
       <TouchableOpacity style={style.backBtn} onPress={() => navigation.goBack()}>
-        <Ionicons name="arrow-back" size={22} color={COLORS.primary} />
+        <Ionicons name="arrow-back" size={22} color={colors.primary} />
       </TouchableOpacity>
-
       <Text style={style.logoText}>Reset Password</Text>
       <Text style={style.subTitle}>
         {step === 1
           ? "Enter the email address linked to your account and we'll send you a code."
           : 'Enter the code we emailed you, then choose a new password.'}
       </Text>
-
       <View style={style.inputContainer}>
         {step === 1 ? (
           <>
             <TextInput
               style={style.input}
               placeholder="Email Address"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={email}
               onChangeText={(val) => setEmail(val.replace(/\s/g, ''))}
               keyboardType="email-address"
@@ -128,10 +127,9 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
               autoCorrect={false}
               maxLength={254}
             />
-
             <TouchableOpacity style={style.button} onPress={handleSendCode} disabled={loading}>
               {loading ? (
-                <ActivityIndicator color={COLORS.textMain} />
+                <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={style.buttonText}>Send Code</Text>
               )}
@@ -142,19 +140,18 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
             <TextInput
               style={style.codeInput}
               placeholder="000000"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={code}
               onChangeText={(val) => setCode(sanitizeDigits(val, 6))}
               keyboardType="number-pad"
               maxLength={6}
               textAlign="center"
             />
-
             <View style={style.passwordWrapper}>
               <TextInput
                 style={style.passwordInput}
                 placeholder="New Password"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry={!showPassword}
@@ -166,16 +163,15 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
                 <Ionicons
                   name={showPassword ? 'eye-off' : 'eye'}
                   size={20}
-                  color={COLORS.textSecondary}
+                  color={colors.textSecondary}
                 />
               </TouchableOpacity>
             </View>
-
             <View style={style.passwordWrapper}>
               <TextInput
                 style={style.passwordInput}
                 placeholder="Confirm New Password"
-                placeholderTextColor={COLORS.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showPassword}
@@ -184,21 +180,18 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
                 maxLength={64}
               />
             </View>
-
             <TouchableOpacity style={style.button} onPress={handleResetPassword} disabled={loading}>
               {loading ? (
-                <ActivityIndicator color={COLORS.textMain} />
+                <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={style.buttonText}>Reset Password</Text>
               )}
             </TouchableOpacity>
-
             <TouchableOpacity style={style.toggleLink} onPress={handleSendCode} disabled={loading}>
               <Text style={style.toggleText}>Resend code</Text>
             </TouchableOpacity>
           </>
         )}
-
         <TouchableOpacity style={style.toggleLink} onPress={() => navigation.navigate('Login')}>
           <Text style={style.toggleText}>Back to Sign In</Text>
         </TouchableOpacity>
@@ -207,89 +200,90 @@ export default function ForgotPasswordScreen({ navigation }: ForgotPasswordScree
   );
 }
 
-const style = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SIZES.padding,
-  },
-  backBtn: {
-    position: 'absolute',
-    top: 56,
-    left: SIZES.padding,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subTitle: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginBottom: 40,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  inputContainer: { width: '100%', maxWidth: 320 },
-  input: {
-    backgroundColor: COLORS.surface,
-    color: COLORS.textMain,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: SIZES.radius,
-    fontSize: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  codeInput: {
-    backgroundColor: COLORS.surface,
-    color: COLORS.textMain,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: SIZES.radius,
-    fontSize: 26,
-    letterSpacing: 10,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    fontWeight: '700',
-  },
-  passwordWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: SIZES.radius,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: 16,
-  },
-  passwordInput: {
-    flex: 1,
-    color: COLORS.textMain,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 16,
-  },
-  eyeIcon: { paddingRight: 16 },
-  button: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: SIZES.radius,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonText: { color: COLORS.textMain, fontSize: 16, fontWeight: '600' },
-  toggleLink: { marginTop: 20, alignItems: 'center' },
-  toggleText: { color: COLORS.primary, fontSize: 14, fontWeight: '500' },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: SIZES.padding,
+    },
+    backBtn: {
+      position: 'absolute',
+      top: 56,
+      left: SIZES.padding,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoText: {
+      fontSize: 28,
+      fontWeight: 'bold',
+      color: c.primary,
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    subTitle: {
+      fontSize: 14,
+      color: c.textSecondary,
+      marginBottom: 40,
+      textAlign: 'center',
+      paddingHorizontal: 20,
+    },
+    inputContainer: { width: '100%', maxWidth: 320 },
+    input: {
+      backgroundColor: c.surface,
+      color: c.textMain,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderRadius: SIZES.radius,
+      fontSize: 16,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    codeInput: {
+      backgroundColor: c.surface,
+      color: c.textMain,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      borderRadius: SIZES.radius,
+      fontSize: 26,
+      letterSpacing: 10,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      fontWeight: '700',
+    },
+    passwordWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: SIZES.radius,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginBottom: 16,
+    },
+    passwordInput: {
+      flex: 1,
+      color: c.textMain,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      fontSize: 16,
+    },
+    eyeIcon: { paddingRight: 16 },
+    button: {
+      backgroundColor: c.primary,
+      paddingVertical: 14,
+      borderRadius: SIZES.radius,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+    toggleLink: { marginTop: 20, alignItems: 'center' },
+    toggleText: { color: c.primary, fontSize: 14, fontWeight: '500' },
+  });

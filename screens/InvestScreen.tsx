@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   FlatList,
   StyleSheet,
-  Image,
   ActivityIndicator,
 } from 'react-native';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useAppContext } from '../context/AppContext';
 
 type Stock = {
@@ -29,6 +29,9 @@ type InvestScreenProps = {
 };
 
 export default function InvestScreen({ navigation }: InvestScreenProps) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
   // Stocks are prefetched at app startup by AppContext — no fetch here.
   const {
     stocks,
@@ -50,7 +53,7 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
 
   const renderStock = ({ item }: { item: Stock }) => {
     const isUp = item.priceChangePercentage >= 0;
-    const changeColor = isUp ? COLORS.success : COLORS.error;
+    const changeColor = isUp ? colors.success : colors.error;
     const arrow = isUp ? '▲' : '▼';
 
     return (
@@ -59,7 +62,7 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
         activeOpacity={0.6}
         onPress={() => navigation.navigate('StockDetail', { stock: item })}
       >
-        <View style={[styles.logoFallback, { backgroundColor: item.logoColor || COLORS.surface }]}>
+        <View style={[styles.logoFallback, { backgroundColor: item.logoColor || colors.surface }]}>
           <Text style={styles.logoText}>{item.symbol.slice(0, 3)}</Text>
         </View>
 
@@ -100,7 +103,7 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
     return (
       <View style={styles.container}>
         <View style={styles.loadingHeader}>
-          <ActivityIndicator color={COLORS.primary} />
+          <ActivityIndicator color={colors.primary} />
           <Text style={styles.loadingText}>Loading stocks...</Text>
         </View>
         <View style={styles.listContent}>
@@ -136,7 +139,7 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
         <TextInput
           style={styles.searchInput}
           placeholder="   Search stocks"
-          placeholderTextColor={COLORS.textSecondary}
+          placeholderTextColor={colors.textSecondary}
           value={query}
           onChangeText={setQuery}
         />
@@ -156,177 +159,178 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    paddingHorizontal: SIZES.padding,
-    paddingTop: SIZES.padding,
-  },
-  text: {
-    color: COLORS.textMain || '#FFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  h1: {
-    color: COLORS.textMain,
-    fontSize: 28,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    marginTop: 4,
-    marginBottom: 18,
-  },
-  search: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    marginBottom: 4,
-  },
-  searchIcon: {
-    color: COLORS.textSecondary,
-    fontSize: 30,
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    color: COLORS.textMain,
-    fontSize: 18,
-    padding: 0,
-  },
-  listContent: {
-    paddingTop: 8,
-    paddingBottom: 24,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.surface,
-  },
-  logoWrapper: {
-    width: 44,
-    height: 44,
-    marginRight: 12,
-    borderRadius: 11,
-    overflow: 'hidden',
-    backgroundColor: COLORS.surface,
-  },
-  logoImage: {
-    width: '100%',
-    height: '100%',
-  },
-  logoFallback: {
-    width: 44,
-    height: 44,
-    borderRadius: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 13,
-    letterSpacing: 0.5,
-  },
-  info: {
-    flex: 1,
-    minWidth: 0,
-  },
-  ticker: {
-    color: COLORS.textMain,
-    fontSize: 15,
-    fontWeight: '600',
-    marginLeft: 12,
-  },
-  name: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    marginTop: 1,
-    marginLeft: 12,
-  },
-  priceBox: {
-    alignItems: 'flex-end',
-  },
-  price: {
-    color: COLORS.textMain,
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  change: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  empty: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-  loadingHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 14,
-    gap: 10,
-  },
-  loadingText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-  },
-  skeleton: {
-    backgroundColor: COLORS.surface,
-    opacity: 0.5,
-  },
-  skeletonLine: {
-    height: 10,
-    backgroundColor: COLORS.surface,
-    borderRadius: 3,
-    opacity: 0.5,
-  },
-  errorBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 30,
-  },
-  errorIcon: {
-    fontSize: 48,
-    color: COLORS.error,
-    marginBottom: 12,
-  },
-  errorTitle: {
-    color: COLORS.textMain,
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  errorMessage: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  retryButton: {
-    backgroundColor: COLORS.primary,
-    paddingHorizontal: 28,
-    paddingVertical: 12,
-    borderRadius: 10,
-  },
-  retryText: {
-    color: COLORS.textMain,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+      paddingHorizontal: SIZES.padding,
+      paddingTop: SIZES.padding,
+    },
+    text: {
+      color: c.textMain,
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    h1: {
+      color: c.textMain,
+      fontSize: 28,
+      fontWeight: '700',
+      letterSpacing: -0.5,
+    },
+    subtitle: {
+      color: c.textSecondary,
+      fontSize: 13,
+      marginTop: 4,
+      marginBottom: 18,
+    },
+    search: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 6,
+      marginBottom: 4,
+    },
+    searchIcon: {
+      color: c.textSecondary,
+      fontSize: 30,
+      marginRight: 10,
+    },
+    searchInput: {
+      flex: 1,
+      color: c.textMain,
+      fontSize: 18,
+      padding: 0,
+    },
+    listContent: {
+      paddingTop: 8,
+      paddingBottom: 24,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 13,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    logoWrapper: {
+      width: 44,
+      height: 44,
+      marginRight: 12,
+      borderRadius: 11,
+      overflow: 'hidden',
+      backgroundColor: c.surface,
+    },
+    logoImage: {
+      width: '100%',
+      height: '100%',
+    },
+    logoFallback: {
+      width: 44,
+      height: 44,
+      borderRadius: 11,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoText: {
+      color: '#FFFFFF',
+      fontWeight: '700',
+      fontSize: 13,
+      letterSpacing: 0.5,
+    },
+    info: {
+      flex: 1,
+      minWidth: 0,
+    },
+    ticker: {
+      color: c.textMain,
+      fontSize: 15,
+      fontWeight: '600',
+      marginLeft: 12,
+    },
+    name: {
+      color: c.textSecondary,
+      fontSize: 12,
+      marginTop: 1,
+      marginLeft: 12,
+    },
+    priceBox: {
+      alignItems: 'flex-end',
+    },
+    price: {
+      color: c.textMain,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    change: {
+      fontSize: 12,
+      fontWeight: '600',
+      marginTop: 2,
+    },
+    empty: {
+      color: c.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      marginTop: 40,
+    },
+    loadingHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 14,
+      gap: 10,
+    },
+    loadingText: {
+      color: c.textSecondary,
+      fontSize: 13,
+    },
+    skeleton: {
+      backgroundColor: c.surface,
+      opacity: 0.5,
+    },
+    skeletonLine: {
+      height: 10,
+      backgroundColor: c.surface,
+      borderRadius: 3,
+      opacity: 0.5,
+    },
+    errorBox: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 30,
+    },
+    errorIcon: {
+      fontSize: 48,
+      color: c.error,
+      marginBottom: 12,
+    },
+    errorTitle: {
+      color: c.textMain,
+      fontSize: 18,
+      fontWeight: '600',
+      marginBottom: 8,
+    },
+    errorMessage: {
+      color: c.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      marginBottom: 24,
+      lineHeight: 20,
+    },
+    retryButton: {
+      backgroundColor: c.primary,
+      paddingHorizontal: 28,
+      paddingVertical: 12,
+      borderRadius: 10,
+    },
+    retryText: {
+      color: c.textMain,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });

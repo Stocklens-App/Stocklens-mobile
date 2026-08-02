@@ -10,7 +10,8 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 // @ts-ignore - AppContext is still a plain JS module
 import { useAppContext, api } from '../context/AppContext';
 import { validatePassword } from '../utils/validation';
@@ -24,18 +25,19 @@ interface AccountSettingsScreenProps {
 }
 
 export default function AccountSettingsScreen({ navigation }: AccountSettingsScreenProps) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
   const { token, signOut } = useAppContext();
 
   // Read-only profile details
   const [name, setName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
-
   // Password fields
   const [currentPassword, setCurrentPassword] = useState<string>('');
   const [newPassword, setNewPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [savingPassword, setSavingPassword] = useState<boolean>(false);
-
   const [deleting, setDeleting] = useState<boolean>(false);
   const [loadingProfile, setLoadingProfile] = useState<boolean>(true);
 
@@ -82,7 +84,6 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
       Alert.alert('Check your details', 'Your new password must be different from the current one.');
       return;
     }
-
     setSavingPassword(true);
     try {
       await api.put('/api/users/password', {
@@ -129,7 +130,7 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
   if (loadingProfile) {
     return (
       <View style={[styles.root, styles.center]}>
-        <ActivityIndicator size="large" color={COLORS.primary || '#3478F6'} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -138,7 +139,7 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
     <View style={styles.root}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.primary || '#3478F6'} />
+          <Ionicons name="arrow-back" size={22} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Account Settings</Text>
         <View style={{ width: 22 }} />
@@ -148,61 +149,51 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
         {/* Profile Info — read only */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>PROFILE INFO</Text>
-
           <Text style={styles.label}>Name</Text>
-          <Text style={styles.readOnlyValue}>{name || '—'}</Text>
-
+          <Text style={styles.readOnlyValue}>{name || '---'}</Text>
           <Text style={styles.label}>Email</Text>
-          <Text style={styles.readOnlyValue}>{email || '—'}</Text>
-
-          {/* <Text style={styles.helperText}>
-            Your name and email can't be changed here. Contact support if they need updating.
-          </Text> */}
+          <Text style={styles.readOnlyValue}>{email || '---'}</Text>
         </View>
 
         {/* Change Password */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>CHANGE PASSWORD</Text>
-
           <Text style={styles.label}>Current Password</Text>
           <TextInput
             style={styles.input}
             value={currentPassword}
             onChangeText={setCurrentPassword}
             placeholder="••••••••"
-            placeholderTextColor={COLORS.textSecondary || '#7E8494'}
+            placeholderTextColor={colors.textSecondary}
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={64}
           />
-
           <Text style={styles.label}>New Password</Text>
           <TextInput
             style={styles.input}
             value={newPassword}
             onChangeText={setNewPassword}
             placeholder="••••••••"
-            placeholderTextColor={COLORS.textSecondary || '#7E8494'}
+            placeholderTextColor={colors.textSecondary}
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={64}
           />
-
           <Text style={styles.label}>Confirm New Password</Text>
           <TextInput
             style={styles.input}
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             placeholder="••••••••"
-            placeholderTextColor={COLORS.textSecondary || '#7E8494'}
+            placeholderTextColor={colors.textSecondary}
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}
             maxLength={64}
           />
-
           <TouchableOpacity
             style={[styles.primaryButton, savingPassword && styles.buttonDisabled]}
             onPress={handleChangePassword}
@@ -239,80 +230,79 @@ export default function AccountSettingsScreen({ navigation }: AccountSettingsScr
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background || '#11141A' },
-  center: { alignItems: 'center', justifyContent: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 56,
-    paddingHorizontal: SIZES.padding || 16,
-    paddingBottom: 16,
-  },
-  backBtn: { width: 22 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textMain || '#FFF' },
-  scrollContent: { paddingHorizontal: SIZES.padding || 16, paddingBottom: 40 },
-
-  card: {
-    backgroundColor: COLORS.surface || '#1C212D',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border || '#2A3245',
-    padding: 18,
-    marginBottom: 16,
-  },
-  cardTitle: {
-    color: COLORS.textSecondary || '#7E8494',
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-    marginBottom: 14,
-  },
-  label: { color: COLORS.textSecondary || '#7E8494', fontSize: 12, marginBottom: 6, marginTop: 10 },
-  readOnlyValue: {
-    color: COLORS.textMain || '#FFF',
-    fontSize: 15,
-    fontWeight: '500',
-    paddingVertical: 4,
-  },
-  helperText: {
-    color: COLORS.textSecondary || '#7E8494',
-    fontSize: 12,
-    marginTop: 16,
-    lineHeight: 17,
-  },
-  input: {
-    backgroundColor: COLORS.background || '#11141A',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border || '#2A3245',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: COLORS.textMain || '#FFF',
-    fontSize: 14,
-  },
-  primaryButton: {
-    backgroundColor: COLORS.primary || '#3478F6',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 18,
-  },
-  primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-  buttonDisabled: { opacity: 0.6 },
-
-  dangerText: {
-    color: COLORS.textSecondary || '#7E8494',
-    fontSize: 13,
-    marginBottom: 16,
-    lineHeight: 18,
-  },
-  deleteButton: {
-    backgroundColor: COLORS.error || '#E74C3C',
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  deleteButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    center: { alignItems: 'center', justifyContent: 'center' },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: 56,
+      paddingHorizontal: SIZES.padding,
+      paddingBottom: 16,
+    },
+    backBtn: { width: 22 },
+    headerTitle: { fontSize: 18, fontWeight: '700', color: c.textMain },
+    scrollContent: { paddingHorizontal: SIZES.padding, paddingBottom: 40 },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 18,
+      marginBottom: 16,
+    },
+    cardTitle: {
+      color: c.textSecondary,
+      fontSize: 12,
+      fontWeight: 'bold',
+      letterSpacing: 1,
+      marginBottom: 14,
+    },
+    label: { color: c.textSecondary, fontSize: 12, marginBottom: 6, marginTop: 10 },
+    readOnlyValue: {
+      color: c.textMain,
+      fontSize: 15,
+      fontWeight: '500',
+      paddingVertical: 4,
+    },
+    helperText: {
+      color: c.textSecondary,
+      fontSize: 12,
+      marginTop: 16,
+      lineHeight: 17,
+    },
+    input: {
+      backgroundColor: c.background,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      color: c.textMain,
+      fontSize: 14,
+    },
+    primaryButton: {
+      backgroundColor: c.primary,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 18,
+    },
+    primaryButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+    buttonDisabled: { opacity: 0.6 },
+    dangerText: {
+      color: c.textSecondary,
+      fontSize: 13,
+      marginBottom: 16,
+      lineHeight: 18,
+    },
+    deleteButton: {
+      backgroundColor: c.error,
+      borderRadius: 12,
+      paddingVertical: 14,
+      alignItems: 'center',
+    },
+    deleteButtonText: { color: '#fff', fontSize: 15, fontWeight: '600' },
+  });

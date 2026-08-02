@@ -1,7 +1,7 @@
 import 'react-native-gesture-handler';
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme, Theme } from '@react-navigation/native';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,21 +23,11 @@ import MyPortfolioScreen from './screens/MyPortfolioScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 // @ts-ignore - AppContext is still a plain JS module
 import { AppProvider, useAppContext } from './context/AppContext';
+import { ThemeProvider, useTheme } from './theme/ThemeContext';
+import { ThemeColors } from './theme';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-
-const AppTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: '#11141A',
-    card: '#1C212D',
-    border: '#2A3245',
-    primary: '#3478F6',
-    text: '#FFFFFF',
-  },
-};
 
 interface MainTabNavigatorProps {
   route?: {
@@ -49,17 +39,18 @@ interface MainTabNavigatorProps {
 }
 
 function MainTabNavigator({ route }: MainTabNavigatorProps) {
+  const { colors } = useTheme();
   const { userName: contextName } = useAppContext();
   const userName = route?.params?.userName || contextName || 'User';
 
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#3478F6',
-        tabBarInactiveTintColor: '#7E8494',
-        tabBarStyle: { backgroundColor: '#1C212D', borderTopColor: '#2A3245', paddingBottom: 5 },
-        headerStyle: { backgroundColor: '#11141A', borderBottomColor: '#2A3245', elevation: 0, shadowOpacity: 0 },
-        headerTitleStyle: { color: '#FFF', fontWeight: 'bold' },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: 5 },
+        headerStyle: { backgroundColor: colors.background, borderBottomColor: colors.border, elevation: 0, shadowOpacity: 0 },
+        headerTitleStyle: { color: colors.textMain, fontWeight: 'bold' },
         headerTitleAlign: 'center',
       }}
     >
@@ -111,13 +102,14 @@ function MainTabNavigator({ route }: MainTabNavigatorProps) {
 
 function RootNavigator() {
   const { token, booting } = useAppContext();
+  const { colors } = useTheme();
 
   // Still reading the stored session — don't decide anything yet, or a
   // returning user sees the login screen flash before landing on Home.
   if (booting) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#11141A', alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color="#3478F6" />
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -127,7 +119,7 @@ function RootNavigator() {
       screenOptions={{
         headerShown: false,
         gestureEnabled: true,
-        cardStyle: { backgroundColor: '#11141A' },
+        cardStyle: { backgroundColor: colors.background },
         ...TransitionPresets.SlideFromRightIOS,
       }}
     >
@@ -140,9 +132,9 @@ function RootNavigator() {
             component={ProfileScreen}
             options={{
               headerShown: true,
-              headerStyle: { backgroundColor: '#11141A', borderBottomColor: '#2A3245' },
-              headerTitleStyle: { color: '#FFF' },
-              headerTintColor: '#3478F6',
+              headerStyle: { backgroundColor: colors.background, borderBottomColor: colors.border },
+              headerTitleStyle: { color: colors.textMain },
+              headerTintColor: colors.primary,
             }}
           />
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
@@ -169,12 +161,39 @@ function RootNavigator() {
   );
 }
 
+// Builds the React Navigation theme from our palette so the nav container,
+// card backgrounds, and default text all switch with the app theme.
+const buildNavTheme = (colors: ThemeColors, isDark: boolean): Theme => {
+  const base = isDark ? DarkTheme : DefaultTheme;
+  return {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: colors.background,
+      card: colors.surface,
+      border: colors.border,
+      primary: colors.primary,
+      text: colors.textMain,
+    },
+  };
+};
+
+// Lives inside ThemeProvider so it can read useTheme; App itself can't.
+function ThemedApp() {
+  const { colors, isDark } = useTheme();
+  return (
+    <NavigationContainer theme={buildNavTheme(colors, isDark)}>
+      <RootNavigator />
+    </NavigationContainer>
+  );
+}
+
 export default function App() {
   return (
-    <AppProvider>
-      <NavigationContainer theme={AppTheme}>
-        <RootNavigator />
-      </NavigationContainer>
-    </AppProvider>
+    <ThemeProvider>
+      <AppProvider>
+        <ThemedApp />
+      </AppProvider>
+    </ThemeProvider>
   );
 }

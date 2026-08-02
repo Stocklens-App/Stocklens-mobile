@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, Switch, ActivityIndicator, ScrollView } from 'react-native';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 // @ts-ignore - AppContext is still a plain JS module
 import { useAppContext, api } from '../context/AppContext';
 
@@ -20,6 +21,9 @@ type ProfileScreenProps = {
 };
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const style = makeStyles(colors);
+
   const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const { token, notificationsEnabled, toggleNotifications, signOut } = useAppContext();
@@ -48,7 +52,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   if (loading) {
     return (
       <View style={[style.container, style.center]}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -62,7 +66,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <Text style={style.avatarText}>{userData?.name ? userData.name[0] : 'U'}</Text>
           </View>
           <Text style={style.name}>{userData?.name}</Text>
-
           <Text style={style.email}>{userData?.email}</Text>
         </View>
 
@@ -73,11 +76,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <Text style={style.cardMetricValue}>{userData?.modulesCompleted} / {totalModules}</Text>
           </View>
           <Text style={style.subTextLabel}>Modules Completed</Text>
-
           <View style={style.progressBarTrack}>
             <View style={[style.progressBarFill, { width: `${progressPercent}%` }]} />
           </View>
-
           <View style={style.streakRow}>
             <Text style={style.streakIcon}>📅🔥</Text>
             <View>
@@ -99,7 +100,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           </View>
         </View>
 
-        {/* Options Row Accordeons */}
+        {/* Options Rows */}
         <TouchableOpacity
           style={style.actionRow}
           onPress={() => navigation.navigate('AccountSettings')}
@@ -116,17 +117,28 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           <Text style={style.chevron}>∨</Text>
         </TouchableOpacity>
 
+        {/* Appearance — dark / light toggle */}
+        <View style={style.actionRow}>
+          <Text style={style.actionText}>Dark Mode</Text>
+          <Switch
+            value={isDark}
+            onValueChange={toggleTheme}
+            trackColor={{ false: '#B8C2D0', true: colors.primary }}
+            thumbColor={'#FFF'}
+          />
+        </View>
+
         <View style={style.actionRow}>
           <Text style={style.actionText}>Notifications</Text>
           <Switch
             value={notificationsEnabled}
             onValueChange={toggleNotifications}
-            trackColor={{ false: '#263143', true: COLORS.primary || '#2F80ED' }}
+            trackColor={{ false: '#B8C2D0', true: colors.primary }}
             thumbColor={'#FFF'}
           />
         </View>
 
-        {/* Logout Button — clearing the token swaps the navigator back to the
+        {/* Logout — clearing the token swaps the navigator back to the
             signed-out stack on its own, so there's no navigate call here. */}
         <TouchableOpacity
           style={style.logoutButton}
@@ -139,153 +151,154 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   );
 }
 
-const style = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  scrollContent: {
-    paddingHorizontal: SIZES.padding || 20,
-    paddingBottom: 40
-  },
-  profileSection: {
-    alignItems: 'center',
-    marginVertical: 20
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: COLORS.primary || '#2F80ED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16
-  },
-  avatarText: {
-    color: COLORS.textMain,
-    fontSize: 44,
-    fontWeight: 'bold'
-  },
-  name: {
-    color: COLORS.textMain,
-    fontSize: 24,
-    fontWeight: 'bold'
-  },
-  username: {
-    color: COLORS.textSecondary,
-    fontSize: 16,
-    marginTop: 4
-  },
-  email: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    marginTop: 2
-  },
-  card: {
-    backgroundColor: '#161C26',
-    borderRadius: SIZES.radius || 16,
-    padding: 18,
-    marginBottom: 16
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center'
-  },
-  cardTitle: {
-    color: COLORS.textSecondary,
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1
-  },
-  cardMetricValue: {
-    color: COLORS.textMain,
-    fontSize: 18,
-    fontWeight: 'bold'
-  },
-  subTextLabel: {
-    color: '#56667A',
-    fontSize: 12,
-    marginTop: 2
-  },
-  progressBarTrack: {
-    height: 6,
-    backgroundColor: '#263143',
-    borderRadius: 3,
-    marginVertical: 12
-  },
-  progressBarFill: {
-    height: 6,
-    backgroundColor: COLORS.textMain,
-    borderRadius: 3
-  },
-  streakRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8
-  },
-  streakIcon: {
-    fontSize: 24,
-    marginRight: 12
-  },
-  streakText: {
-    color: COLORS.textMain,
-    fontSize: 16,
-    fontWeight: 'bold'
-  },
-  portfolioRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8
-  },
-  portfolioValue: {
-    color: COLORS.textMain,
-    fontSize: 24,
-    fontWeight: 'bold'
-  },
-  portfolioReturn: {
-    color: '#27AE60',
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 4
-  },
-  sparklineGraphic: {
-    fontSize: 32
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#161C26',
-    borderRadius: SIZES.radius || 16,
-    padding: 18,
-    marginBottom: 12
-  },
-  actionText: {
-    color: COLORS.textMain,
-    fontSize: 16,
-    fontWeight: '500'
-  },
-  chevron: {
-    color: '#56667A',
-    fontSize: 14
-  },
-  logoutButton: {
-    backgroundColor: COLORS.error,
-    paddingVertical: 14,
-    borderRadius: SIZES.radius || 16,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 20
-  },
-  logoutText: {
-    color: COLORS.textMain,
-    fontSize: 16,
-    fontWeight: '600'
-  }
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    center: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    scrollContent: {
+      paddingHorizontal: SIZES.padding,
+      paddingBottom: 40,
+    },
+    profileSection: {
+      alignItems: 'center',
+      marginVertical: 20,
+    },
+    avatar: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: c.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    avatarText: {
+      color: '#FFFFFF',
+      fontSize: 44,
+      fontWeight: 'bold',
+    },
+    name: {
+      color: c.textMain,
+      fontSize: 24,
+      fontWeight: 'bold',
+    },
+    username: {
+      color: c.textSecondary,
+      fontSize: 16,
+      marginTop: 4,
+    },
+    email: {
+      color: c.textSecondary,
+      fontSize: 14,
+      marginTop: 2,
+    },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: SIZES.radius,
+      padding: 18,
+      marginBottom: 16,
+    },
+    cardHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    cardTitle: {
+      color: c.textSecondary,
+      fontSize: 12,
+      fontWeight: 'bold',
+      letterSpacing: 1,
+    },
+    cardMetricValue: {
+      color: c.textMain,
+      fontSize: 18,
+      fontWeight: 'bold',
+    },
+    subTextLabel: {
+      color: c.textSecondary,
+      fontSize: 12,
+      marginTop: 2,
+    },
+    progressBarTrack: {
+      height: 6,
+      backgroundColor: c.border,
+      borderRadius: 3,
+      marginVertical: 12,
+    },
+    progressBarFill: {
+      height: 6,
+      backgroundColor: c.primary,
+      borderRadius: 3,
+    },
+    streakRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    streakIcon: {
+      fontSize: 24,
+      marginRight: 12,
+    },
+    streakText: {
+      color: c.textMain,
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    portfolioRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 8,
+    },
+    portfolioValue: {
+      color: c.textMain,
+      fontSize: 24,
+      fontWeight: 'bold',
+    },
+    portfolioReturn: {
+      color: c.success,
+      fontSize: 14,
+      fontWeight: '600',
+      marginTop: 4,
+    },
+    sparklineGraphic: {
+      fontSize: 32,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: SIZES.radius,
+      padding: 18,
+      marginBottom: 12,
+    },
+    actionText: {
+      color: c.textMain,
+      fontSize: 16,
+      fontWeight: '500',
+    },
+    chevron: {
+      color: c.textSecondary,
+      fontSize: 14,
+    },
+    logoutButton: {
+      backgroundColor: c.error,
+      paddingVertical: 14,
+      borderRadius: SIZES.radius,
+      width: '100%',
+      alignItems: 'center',
+      marginTop: 20,
+    },
+    logoutText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });

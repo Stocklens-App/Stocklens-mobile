@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { StackScreenProps } from '@react-navigation/stack';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useAppContext, api } from '../context/AppContext';
 import { validateEmail } from '../utils/validation';
 import type { RootStackParamList } from '../navigation/types';
@@ -18,6 +19,9 @@ interface LoginResponse {
 }
 
 export default function LoginScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const style = makeStyles(colors);
+
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -38,21 +42,17 @@ export default function LoginScreen({ route, navigation }: Props) {
       return;
     }
     setErrors([]);
-
     setLoading(true);
     try {
       const response = await api.post<LoginResponse>('/auth/login', {
         email: email.trim().toLowerCase(),
         password: password.trim(),
       });
-
       const { token, email: userEmail, name } = response.data;
-
       if (!token) {
         Alert.alert('Login Failed', 'The server did not return a session. Please try again.');
         return;
       }
-
       await signIn(token, userEmail, name || 'User');
     } catch (error: any) {
       const resData = error.response?.data;
@@ -79,19 +79,18 @@ export default function LoginScreen({ route, navigation }: Props) {
   return (
     <View style={style.container}>
       <View style={style.logoBox}>
-        <Ionicons name="trending-up" size={26} color={COLORS.primary} />
+        <Ionicons name="trending-up" size={26} color={colors.primary} />
       </View>
-
       <Text style={style.logoText}>StockLens</Text>
       <Text style={style.subTitle}>Track stock, sales, and profits in real-time</Text>
 
       <View style={style.inputContainer}>
         <View style={[style.inputWrapper, errors.includes('email') && style.errorInput]}>
-          <Ionicons name="mail-outline" size={18} color={COLORS.textSecondary} style={style.leadingIcon} />
+          <Ionicons name="mail-outline" size={18} color={colors.textSecondary} style={style.leadingIcon} />
           <TextInput
             style={style.input}
             placeholder="Email Address"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={email}
             onChangeText={(val) => {
               setEmail(val.replace(/\s/g, ''));
@@ -105,11 +104,11 @@ export default function LoginScreen({ route, navigation }: Props) {
         </View>
 
         <View style={[style.inputWrapper, errors.includes('password') && style.errorInput]}>
-          <Ionicons name="lock-closed-outline" size={18} color={COLORS.textSecondary} style={style.leadingIcon} />
+          <Ionicons name="lock-closed-outline" size={18} color={colors.textSecondary} style={style.leadingIcon} />
           <TextInput
             style={style.input}
             placeholder="Password"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={password}
             onChangeText={(val) => {
               setPassword(val);
@@ -121,12 +120,12 @@ export default function LoginScreen({ route, navigation }: Props) {
             maxLength={64}
           />
           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={style.eyeIcon}>
-            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={COLORS.textSecondary} />
+            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity style={style.button} onPress={handleLogin} disabled={loading}>
-          {loading ? <ActivityIndicator color={COLORS.textMain} /> : <Text style={style.buttonText}>Sign In</Text>}
+          {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={style.buttonText}>Sign In</Text>}
         </TouchableOpacity>
 
         <TouchableOpacity style={style.forgotLink} onPress={() => navigation.navigate('ForgotPassword')}>
@@ -141,57 +140,58 @@ export default function LoginScreen({ route, navigation }: Props) {
   );
 }
 
-const style = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SIZES.padding,
-  },
-  logoBox: {
-    width: 52,
-    height: 52,
-    borderRadius: SIZES.radius + 6,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 14,
-  },
-  logoText: { fontSize: 36, fontWeight: 'bold', color: COLORS.primary, marginBottom: 8 },
-  subTitle: { fontSize: 14, color: COLORS.textSecondary, marginBottom: 40, textAlign: 'center' },
-  inputContainer: { width: '100%', maxWidth: 320 },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: SIZES.radius,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-  },
-  leadingIcon: { marginRight: 8 },
-  input: {
-    flex: 1,
-    color: COLORS.textMain,
-    paddingVertical: 14,
-    fontSize: 16,
-  },
-  errorInput: { borderColor: COLORS.error },
-  eyeIcon: { paddingLeft: 8 },
-  button: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: SIZES.radius,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonText: { color: COLORS.textMain, fontSize: 16, fontWeight: '600' },
-  toggleLink: { marginTop: 20, alignItems: 'center' },
-  toggleText: { color: COLORS.primary, fontSize: 14, fontWeight: '500' },
-  forgotLink: { marginTop: 14, alignItems: 'center' },
-  forgotText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '500' },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: SIZES.padding,
+    },
+    logoBox: {
+      width: 52,
+      height: 52,
+      borderRadius: SIZES.radius + 6,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 14,
+    },
+    logoText: { fontSize: 36, fontWeight: 'bold', color: c.primary, marginBottom: 8 },
+    subTitle: { fontSize: 14, color: c.textSecondary, marginBottom: 40, textAlign: 'center' },
+    inputContainer: { width: '100%', maxWidth: 320 },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: SIZES.radius,
+      borderWidth: 1,
+      borderColor: c.border,
+      marginBottom: 16,
+      paddingHorizontal: 16,
+    },
+    leadingIcon: { marginRight: 8 },
+    input: {
+      flex: 1,
+      color: c.textMain,
+      paddingVertical: 14,
+      fontSize: 16,
+    },
+    errorInput: { borderColor: c.error },
+    eyeIcon: { paddingLeft: 8 },
+    button: {
+      backgroundColor: c.primary,
+      paddingVertical: 14,
+      borderRadius: SIZES.radius,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: '600' },
+    toggleLink: { marginTop: 20, alignItems: 'center' },
+    toggleText: { color: c.primary, fontSize: 14, fontWeight: '500' },
+    forgotLink: { marginTop: 14, alignItems: 'center' },
+    forgotText: { color: c.textSecondary, fontSize: 13, fontWeight: '500' },
+  });

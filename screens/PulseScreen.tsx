@@ -11,7 +11,8 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useAppContext } from '../context/AppContext';
 import { FEES, COMMISSION_OPTIONS, calculateFees } from '../constants/fees';
 import type { Stock } from '../types';
@@ -36,8 +37,10 @@ interface Calculation {
 }
 
 export default function PulseScreen() {
-  const { stocks, stocksLoading, stocksError, refetchStocks } = useAppContext();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
+  const { stocks, stocksLoading, stocksError, refetchStocks } = useAppContext();
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
   const [amountText, setAmountText] = useState<string>('');
   const [query, setQuery] = useState<string>('');
@@ -66,9 +69,7 @@ export default function PulseScreen() {
 
   const calc: Calculation | null = useMemo(() => {
     if (!stock || !amount || amount <= 0) return null;
-
     const price = stock.currentPrice;
-
     // Work out how many whole shares fit once buy-side fees are covered.
     // Fees scale with trade value, so solve iteratively: start from the naive
     // count, then trim until shares + their fees fit inside the budget.
@@ -79,7 +80,6 @@ export default function PulseScreen() {
       if (tradeValue + fees <= amount) break;
       shares -= 1;
     }
-
     if (shares === 0) {
       return {
         shares: 0,
@@ -90,18 +90,14 @@ export default function PulseScreen() {
         breakEvenPct: 0,
       };
     }
-
     const spentOnShares = shares * price;
     const buyFees = calculateFees(spentOnShares, commissionRate).total;
     const leftover = amount - spentOnShares - buyFees;
-
     // Selling the same holding later incurs the same class of fees again.
     const sellFees = calculateFees(spentOnShares, commissionRate).total;
-
     // The price must rise enough to recover both buy and sell fees before
     // the position breaks even.
     const breakEvenPct = ((buyFees + sellFees) / spentOnShares) * 100;
-
     return { shares, spentOnShares, buyFees, leftover, sellFees, breakEvenPct };
   }, [stock, amount, commissionRate]);
 
@@ -113,8 +109,8 @@ export default function PulseScreen() {
   if (stocksLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.centerText}>Loading stocks…</Text>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.centerText}>Loading stocks...</Text>
       </View>
     );
   }
@@ -158,7 +154,7 @@ export default function PulseScreen() {
             value={query}
             onChangeText={setQuery}
             placeholder="Search stocks"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             autoCapitalize="characters"
             autoCorrect={false}
           />
@@ -180,7 +176,7 @@ export default function PulseScreen() {
                   style={[styles.stockPill, active && styles.stockPillActive]}
                   activeOpacity={0.8}
                 >
-                  <View style={[styles.logo, { backgroundColor: s.logoColor || COLORS.primary }]}>
+                  <View style={[styles.logo, { backgroundColor: s.logoColor || colors.primary }]}>
                     <Text style={styles.logoText}>{s.symbol.slice(0, 2)}</Text>
                   </View>
                   <Text style={[styles.pillSymbol, active && styles.pillSymbolActive]}>{s.symbol}</Text>
@@ -207,10 +203,11 @@ export default function PulseScreen() {
             value={amountText}
             onChangeText={(t) => setAmountText(t.replace(/[^0-9.]/g, ''))}
             placeholder="0"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             keyboardType="numeric"
           />
         </View>
+
         <View style={styles.chipRow}>
           {QUICK_AMOUNTS.map((amt) => (
             <TouchableOpacity
@@ -265,15 +262,15 @@ export default function PulseScreen() {
               {/* Fee breakdown */}
               {feeRows && (
                 <View style={styles.breakdown}>
-                  <Row label="Shares" value={fmt(calc.spentOnShares)} />
-                  <Row label={`Broker commission`} value={fmt(feeRows.commission)} />
-                  <Row label="VAT on commission" value={fmt(feeRows.vat)} />
-                  <Row label="GSE levy" value={fmt(feeRows.gseLevy)} />
-                  <Row label="CSD levy" value={fmt(feeRows.csdLevy)} />
-                  <Row label="SEC levy" value={fmt(feeRows.secLevy)} />
+                  <Row colors={colors} label="Shares" value={fmt(calc.spentOnShares)} />
+                  <Row colors={colors} label={`Broker commission`} value={fmt(feeRows.commission)} />
+                  <Row colors={colors} label="VAT on commission" value={fmt(feeRows.vat)} />
+                  <Row colors={colors} label="GSE levy" value={fmt(feeRows.gseLevy)} />
+                  <Row colors={colors} label="CSD levy" value={fmt(feeRows.csdLevy)} />
+                  <Row colors={colors} label="SEC levy" value={fmt(feeRows.secLevy)} />
                   <View style={styles.divider} />
-                  <Row label="Total fees to buy" value={fmt(calc.buyFees)} strong />
-                  <Row label="Cash left over" value={fmt(calc.leftover)} />
+                  <Row colors={colors} label="Total fees to buy" value={fmt(calc.buyFees)} strong />
+                  <Row colors={colors} label="Cash left over" value={fmt(calc.leftover)} />
                 </View>
               )}
 
@@ -304,7 +301,8 @@ export default function PulseScreen() {
   );
 }
 
-function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function Row({ colors, label, value, strong }: { colors: ThemeColors; label: string; value: string; strong?: boolean }) {
+  const styles = makeStyles(colors);
   return (
     <View style={styles.row}>
       <Text style={[styles.rowLabel, strong && styles.rowStrong]}>{label}</Text>
@@ -313,167 +311,154 @@ function Row({ label, value, strong }: { label: string; value: string; strong?: 
   );
 }
 
-const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: COLORS.background },
-  container: { flex: 1, backgroundColor: COLORS.background },
-  content: { padding: SIZES.padding, paddingBottom: 48 },
-
-  center: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SIZES.padding,
-  },
-  centerText: { color: COLORS.textSecondary, fontSize: 14, marginTop: 12, textAlign: 'center' },
-  retryBtn: {
-    marginTop: 16,
-    backgroundColor: COLORS.primary,
-    borderRadius: SIZES.radius,
-    paddingVertical: 10,
-    paddingHorizontal: 24,
-  },
-  retryText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
-
-  title: { color: COLORS.textMain, fontSize: 22, fontWeight: '700', marginBottom: 6 },
-  subtitle: { color: COLORS.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: 22 },
-
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: SIZES.radius,
-    paddingHorizontal: 12,
-    marginBottom: 14,
-  },
-  searchIcon: { fontSize: 28, marginRight: 8, color: COLORS.textSecondary },
-  searchInput: { flex: 1, color: COLORS.textMain, fontSize: 15, paddingVertical: 12 },
-  searchClear: { color: COLORS.textSecondary, fontSize: 14, paddingHorizontal: 4 },
-  noMatch: { color: COLORS.textSecondary, fontSize: 14, marginBottom: 16, fontStyle: 'italic' },
-
-  pillRow: { gap: 10, paddingRight: 8, marginBottom: 12 },
-  stockPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: SIZES.radius,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    gap: 8,
-  },
-  stockPillActive: { borderColor: COLORS.primary },
-  logo: { width: 28, height: 28, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-  logoText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
-  pillSymbol: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
-  pillSymbolActive: { color: COLORS.textMain },
-
-  priceLine: { color: COLORS.textSecondary, fontSize: 13, marginBottom: 22 },
-  priceValue: { color: COLORS.textMain, fontWeight: '700' },
-
-  label: { color: COLORS.textMain, fontSize: 15, fontWeight: '600', marginBottom: 12 },
-
-  amountBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: SIZES.radius,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  cedi: { color: COLORS.textSecondary, fontSize: 22, fontFamily: 'Georgia', marginRight: 6 },
-  amountInput: {
-    flex: 1,
-    color: COLORS.textMain,
-    fontSize: 22,
-    fontFamily: 'Georgia',
-    paddingVertical: 14,
-  },
-
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
-  quickChip: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: SIZES.radius,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-  },
-  quickChipText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' },
-
-  commissionChip: {
-    flex: 1,
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: SIZES.radius,
-    paddingVertical: 12,
-  },
-  commissionChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
-  commissionText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
-  commissionTextActive: { color: '#FFF' },
-
-  resultCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: SIZES.radius,
-    padding: SIZES.padding,
-    marginTop: 4,
-  },
-  resultLead: { color: COLORS.textSecondary, fontSize: 13 },
-  sharesValue: {
-    color: COLORS.textMain,
-    fontSize: 34,
-    fontFamily: 'Georgia',
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  resultSub: { color: COLORS.textSecondary, fontSize: 13, marginTop: 2 },
-  notEnoughText: { color: COLORS.textMain, fontSize: 15, lineHeight: 22 },
-
-  breakdown: { marginTop: 20 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 },
-  rowLabel: { color: COLORS.textSecondary, fontSize: 13 },
-  rowValue: { color: COLORS.textMain, fontSize: 13, fontWeight: '500' },
-  rowStrong: { color: COLORS.textMain, fontWeight: '700', fontSize: 14 },
-  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 8 },
-
-  breakEvenCard: {
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 20,
-  },
-  breakEvenTitle: {
-    color: COLORS.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-    marginBottom: 6,
-  },
-  breakEvenBody: { color: COLORS.textMain, fontSize: 13, lineHeight: 20 },
-  breakEvenPct: { color: COLORS.primary, fontWeight: '700' },
-
-  disclaimer: { color: COLORS.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 18 },
-
-  emptyState: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderStyle: 'dashed',
-    borderRadius: SIZES.radius,
-    padding: 28,
-    marginTop: 8,
-    alignItems: 'center',
-  },
-  emptyText: { color: COLORS.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20 },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    flex: { flex: 1, backgroundColor: c.background },
+    container: { flex: 1, backgroundColor: c.background },
+    content: { padding: SIZES.padding, paddingBottom: 48 },
+    center: {
+      flex: 1,
+      backgroundColor: c.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: SIZES.padding,
+    },
+    centerText: { color: c.textSecondary, fontSize: 14, marginTop: 12, textAlign: 'center' },
+    retryBtn: {
+      marginTop: 16,
+      backgroundColor: c.primary,
+      borderRadius: SIZES.radius,
+      paddingVertical: 10,
+      paddingHorizontal: 24,
+    },
+    retryText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
+    title: { color: c.textMain, fontSize: 22, fontWeight: '700', marginBottom: 6 },
+    subtitle: { color: c.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: 22 },
+    searchBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: SIZES.radius,
+      paddingHorizontal: 12,
+      marginBottom: 14,
+    },
+    searchIcon: { fontSize: 28, marginRight: 8, color: c.textSecondary },
+    searchInput: { flex: 1, color: c.textMain, fontSize: 15, paddingVertical: 12 },
+    searchClear: { color: c.textSecondary, fontSize: 14, paddingHorizontal: 4 },
+    noMatch: { color: c.textSecondary, fontSize: 14, marginBottom: 16, fontStyle: 'italic' },
+    pillRow: { gap: 10, paddingRight: 8, marginBottom: 12 },
+    stockPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: SIZES.radius,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      gap: 8,
+    },
+    stockPillActive: { borderColor: c.primary },
+    logo: { width: 28, height: 28, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+    logoText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
+    pillSymbol: { color: c.textSecondary, fontSize: 14, fontWeight: '600' },
+    pillSymbolActive: { color: c.textMain },
+    priceLine: { color: c.textSecondary, fontSize: 13, marginBottom: 22 },
+    priceValue: { color: c.textMain, fontWeight: '700' },
+    label: { color: c.textMain, fontSize: 15, fontWeight: '600', marginBottom: 12 },
+    amountBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: SIZES.radius,
+      paddingHorizontal: 16,
+      marginBottom: 12,
+    },
+    cedi: { color: c.textSecondary, fontSize: 22, fontFamily: 'Georgia', marginRight: 6 },
+    amountInput: {
+      flex: 1,
+      color: c.textMain,
+      fontSize: 22,
+      fontFamily: 'Georgia',
+      paddingVertical: 14,
+    },
+    chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
+    quickChip: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: SIZES.radius,
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+    },
+    quickChipText: { color: c.textSecondary, fontSize: 13, fontWeight: '600' },
+    commissionChip: {
+      flex: 1,
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: SIZES.radius,
+      paddingVertical: 12,
+    },
+    commissionChipActive: { backgroundColor: c.primary, borderColor: c.primary },
+    commissionText: { color: c.textSecondary, fontSize: 14, fontWeight: '600' },
+    commissionTextActive: { color: '#FFF' },
+    resultCard: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: SIZES.radius,
+      padding: SIZES.padding,
+      marginTop: 4,
+    },
+    resultLead: { color: c.textSecondary, fontSize: 13 },
+    sharesValue: {
+      color: c.textMain,
+      fontSize: 34,
+      fontFamily: 'Georgia',
+      fontWeight: '700',
+      marginTop: 2,
+    },
+    resultSub: { color: c.textSecondary, fontSize: 13, marginTop: 2 },
+    notEnoughText: { color: c.textMain, fontSize: 15, lineHeight: 22 },
+    breakdown: { marginTop: 20 },
+    row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 },
+    rowLabel: { color: c.textSecondary, fontSize: 13 },
+    rowValue: { color: c.textMain, fontSize: 13, fontWeight: '500' },
+    rowStrong: { color: c.textMain, fontWeight: '700', fontSize: 14 },
+    divider: { height: 1, backgroundColor: c.border, marginVertical: 8 },
+    breakEvenCard: {
+      backgroundColor: c.background,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      padding: 14,
+      marginTop: 20,
+    },
+    breakEvenTitle: {
+      color: c.textSecondary,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1,
+      marginBottom: 6,
+    },
+    breakEvenBody: { color: c.textMain, fontSize: 13, lineHeight: 20 },
+    breakEvenPct: { color: c.primary, fontWeight: '700' },
+    disclaimer: { color: c.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 18 },
+    emptyState: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+      borderRadius: SIZES.radius,
+      padding: 28,
+      marginTop: 8,
+      alignItems: 'center',
+    },
+    emptyText: { color: c.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  });

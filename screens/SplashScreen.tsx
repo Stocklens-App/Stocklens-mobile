@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing, StatusBar } from 'react-native';
 import Svg, { Rect, Circle, Line, G, ClipPath, Defs } from 'react-native-svg';
-import { COLORS } from '../theme';
+import { ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 const ARect = Animated.createAnimatedComponent(Rect);
 const ACircle = Animated.createAnimatedComponent(Circle);
@@ -15,8 +16,6 @@ const BARS = [
   { x: 679, top: 300, fill: '#3478F6' },
 ];
 const L = { cx: 450, cy: 477, r: 181, ring: 42, inner: 158 };
-const INK = '#FFFFFF';
-const GLASS = '#131A26';
 
 type SplashScreenProps = {
   navigation: {
@@ -25,6 +24,13 @@ type SplashScreenProps = {
 };
 
 export default function SplashScreen({ navigation }: SplashScreenProps) {
+  const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
+
+  // Logo ink: white magnifier reads on dark; on light we darken it so it stays visible.
+  const INK = isDark ? '#FFFFFF' : '#0F1B2D';
+  const GLASS = isDark ? '#131A26' : '#EAF1FB';
+
   const grow  = useRef(BARS.map(() => new Animated.Value(0))).current;
   const lens  = useRef(new Animated.Value(0)).current;
   const scan  = useRef(new Animated.Value(0)).current;
@@ -88,7 +94,7 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
 
   return (
     <Animated.View style={[styles.root, { opacity: exit }]}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       <Animated.View
         style={{
@@ -142,19 +148,20 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  word: {
-    marginTop: 26,
-    fontSize: 34,
-    fontWeight: '700',
-    fontFamily: 'Georgia',
-    letterSpacing: -1,
-    color: COLORS.textMain,
-  },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: {
+      flex: 1,
+      backgroundColor: c.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    word: {
+      marginTop: 26,
+      fontSize: 34,
+      fontWeight: '700',
+      fontFamily: 'Georgia',
+      letterSpacing: -1,
+      color: c.textMain,
+    },
+  });

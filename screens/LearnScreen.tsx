@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useAppContext, IP_ADDRESS } from '../context/AppContext';
+import { useAppContext, api } from '../context/AppContext';
+import { useTheme } from '../theme/ThemeContext';
+import { ThemeColors } from '../theme';
 
 type Module = {
   id: string | number;
@@ -10,12 +12,14 @@ type Module = {
 };
 
 export default function LearnScreen() {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
   const [activeCategory, setActiveCategory] = useState<string>('Getting Started');
   const [expandedId, setExpandedId] = useState<string | number | null>(null);
 
   // Lessons are prefetched at app startup by AppContext — no fetch here.
-  const { modules, modulesLoading: loading } = useAppContext();
-  const { currentUserEmail } = useAppContext();
+  const { modules, modulesLoading: loading, currentUserEmail } = useAppContext();
 
   // Filter out live items from the state array by the active tab choice
   const filteredData: Module[] = modules.filter((item: Module) => item.category === activeCategory);
@@ -26,16 +30,17 @@ export default function LearnScreen() {
     setExpandedId(opening ? id : null);
 
     // Mark this module as completed the first time it's opened.
-    // Safe to call every time it's opened — the backend only counts it once.
+    // Safe to call every time — the backend only counts it once.
     if (opening && currentUserEmail) {
-      fetch(`http://${IP_ADDRESS}:8081/api/academic/complete`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: currentUserEmail, moduleId: String(id) }),
-      }).catch((err: Error) => {
-        // Non-critical — don't interrupt reading if this fails.
-        console.log('Module completion tracking error:', err.message);
-      });
+      api
+        .post('/api/academic/complete', {
+          email: currentUserEmail,
+          moduleId: Number(id),
+        })
+        .catch((err: any) => {
+          // Non-critical — don't interrupt reading if this fails.
+          console.log('Module completion error:', err.response?.status, err.response?.data);
+        });
     }
   };
 
@@ -43,7 +48,7 @@ export default function LearnScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator size="large" color="#2563EB" />
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={[styles.subtitleText, { marginTop: 15 }]}>Connecting to StockLens network...</Text>
       </View>
     );
@@ -79,23 +84,20 @@ export default function LearnScreen() {
         {filteredData.map((item) => {
           const isExpanded = expandedId === item.id;
           return (
-            <TouchableOpacity 
-              key={item.id} 
+            <TouchableOpacity
+              key={item.id}
               activeOpacity={0.9}
               onPress={() => toggleExpand(item.id)}
-              style={[
-                styles.card,
-                isExpanded && styles.expandedCard
-              ]}
+              style={[styles.card, isExpanded && styles.expandedCard]}
             >
               <View style={styles.cardHeader}>
-                {/* Left checkbox box icon - now styled in Blue theme */}
+                {/* Left checkbox box icon */}
                 <View style={[styles.boxIcon, isExpanded && styles.boxIconActive]}>
                   <View style={[styles.boxInner, isExpanded && styles.boxInnerActive]} />
                 </View>
-                
+
                 <Text style={styles.questionText}>{item.question}</Text>
-                
+
                 <Text style={styles.chevronIcon}>{isExpanded ? '▲' : '▼'}</Text>
               </View>
 
@@ -113,146 +115,115 @@ export default function LearnScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#0A111E', 
-    paddingTop: 60, 
-    paddingHorizontal: 20 
-  },
-  headerTitle: { 
-    color: '#FFF', 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    textAlign: 'center',
-    marginBottom: 25 
-  },
-  tabScrollContainer: { 
-    alignItems: 'center'
-  },
-  tabButton: { 
-    marginRight: 24,
-    position: 'relative',
-    paddingBottom: 6
-  },
-  tabText: { 
-    color: '#52627A', 
-    fontWeight: '600', 
-    fontSize: 15 
-  },
-  activeTabText: { 
-    color: '#FFF' 
-  },
-  activeIndicatorLine: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: '#2563EB' 
-  },
-  scrollbarContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 25,
-    paddingHorizontal: 4
-  },
-  arrowIcon: {
-    color: '#475569',
-    fontSize: 10
-  },
-  scrollbarTrack: {
-    flex: 1,
-    height: 4,
-    backgroundColor: '#1E293B',
-    borderRadius: 2,
-    marginHorizontal: 10,
-    position: 'relative'
-  },
-  scrollbarHandle: {
-    position: 'absolute',
-    left: 10,
-    width: 140,
-    height: '100%',
-    backgroundColor: '#475569',
-    borderRadius: 2
-  },
-  subtitleText: {
-    color: '#475569',
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 30
-  },
-  questionsList: { 
-    flex: 1 ,
-    marginTop: 10
-  },
-  card: { 
-    backgroundColor: '#111A2E', 
-    padding: 18, 
-    borderRadius: 14, 
-    marginBottom: 14, 
-    borderWidth: 1, 
-    borderColor: '#1E293B',
-  },
-  expandedCard: { 
-    borderColor: '#2563EB', 
-    borderWidth: 1.5
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  boxIcon: {
-    width: 20,
-    height: 20,
-    borderWidth: 1.5,
-    borderColor: '#2563EB', 
-    borderRadius: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14
-  },
-  boxIconActive: {
-    backgroundColor: '#0F265C' 
-  },
-  boxInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 1
-  },
-  boxInnerActive: {
-    backgroundColor: '#2563EB' 
-  },
-  questionText: { 
-    color: '#FFF', 
-    fontSize: 14, 
-    fontWeight: '600', 
-    flex: 1,
-    lineHeight: 20
-  },
-  chevronIcon: {
-    color: '#475569',
-    fontSize: 10,
-    marginLeft: 10
-  },
-  answerContainer: {
-    marginTop: 18,
-    borderTopWidth: 1,
-    borderColor: '#1E293B',
-    paddingTop: 16
-  },
-  answerText: { 
-    color: '#94A3B8', 
-    fontSize: 13, 
-    lineHeight: 22,
-    marginBottom: 16
-  },
-  readMoreLink: {
-    color: '#2563EB', 
-    fontSize: 13,
-    fontWeight: 'bold'
-  }
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+      paddingTop: 60,
+      paddingHorizontal: 20,
+    },
+    headerTitle: {
+      color: c.textMain,
+      fontSize: 22,
+      fontWeight: 'bold',
+      textAlign: 'center',
+      marginBottom: 25,
+    },
+    tabScrollContainer: {
+      alignItems: 'center',
+    },
+    tabButton: {
+      marginRight: 24,
+      position: 'relative',
+      paddingBottom: 6,
+    },
+    tabText: {
+      color: c.textSecondary,
+      fontWeight: '600',
+      fontSize: 15,
+    },
+    activeTabText: {
+      color: c.textMain,
+    },
+    activeIndicatorLine: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 2,
+      backgroundColor: c.primary,
+    },
+    subtitleText: {
+      color: c.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      marginBottom: 30,
+    },
+    questionsList: {
+      flex: 1,
+      marginTop: 10,
+    },
+    card: {
+      backgroundColor: c.surface,
+      padding: 18,
+      borderRadius: 14,
+      marginBottom: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    expandedCard: {
+      borderColor: c.primary,
+      borderWidth: 1.5,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    boxIcon: {
+      width: 20,
+      height: 20,
+      borderWidth: 1.5,
+      borderColor: c.primary,
+      borderRadius: 4,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 14,
+    },
+    boxIconActive: {
+      backgroundColor: c.surface,
+    },
+    boxInner: {
+      width: 8,
+      height: 8,
+      borderRadius: 1,
+    },
+    boxInnerActive: {
+      backgroundColor: c.primary,
+    },
+    questionText: {
+      color: c.textMain,
+      fontSize: 14,
+      fontWeight: '600',
+      flex: 1,
+      lineHeight: 20,
+    },
+    chevronIcon: {
+      color: c.textSecondary,
+      fontSize: 10,
+      marginLeft: 10,
+    },
+    answerContainer: {
+      marginTop: 18,
+      borderTopWidth: 1,
+      borderColor: c.border,
+      paddingTop: 16,
+    },
+    answerText: {
+      color: c.textSecondary,
+      fontSize: 13,
+      lineHeight: 22,
+      marginBottom: 16,
+    },
+  });

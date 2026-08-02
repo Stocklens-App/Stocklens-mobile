@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 // @ts-ignore - AppContext is still a plain JS module
-import { useAppContext, IP_ADDRESS } from '../context/AppContext';
+import { useAppContext, api } from '../context/AppContext';
 
 type NotificationType = 'SCAM_ALERT' | 'PRICE_ALERT' | 'GENERAL';
 
@@ -56,6 +57,9 @@ interface NotificationsScreenProps {
 }
 
 export default function NotificationsScreen({ navigation }: NotificationsScreenProps) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
+
   const { currentUserEmail, refreshUnreadCount } = useAppContext();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -67,17 +71,14 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
       return;
     }
     setError(null);
-    fetch(`http://${IP_ADDRESS}:8081/api/notifications?email=${encodeURIComponent(currentUserEmail)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-        return res.json();
-      })
-      .then((data: AppNotification[]) => {
+    api
+      .get<AppNotification[]>(`/api/notifications?email=${encodeURIComponent(currentUserEmail)}`)
+      .then(({ data }) => {
         setNotifications(data || []);
         setLoading(false);
       })
-      .catch((err: Error) => {
-        console.error('Notifications load error:', err.message);
+      .catch((err: any) => {
+        console.error('Notifications load error:', err.response?.status, err.message);
         setError('Could not load notifications.');
         setLoading(false);
       });
@@ -90,7 +91,7 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
   const handleMarkAsRead = async (id: number) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     try {
-      await fetch(`http://${IP_ADDRESS}:8081/api/notifications/${id}/read`, { method: 'PUT' });
+      await api.put(`/api/notifications/${id}/read`);
       refreshUnreadCount();
     } catch (err: any) {
       console.log('Mark as read error:', err.message);
@@ -101,10 +102,7 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
     if (!currentUserEmail) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     try {
-      await fetch(
-        `http://${IP_ADDRESS}:8081/api/notifications/read-all?email=${encodeURIComponent(currentUserEmail)}`,
-        { method: 'PUT' }
-      );
+      await api.put(`/api/notifications/read-all?email=${encodeURIComponent(currentUserEmail)}`);
       refreshUnreadCount();
     } catch (err: any) {
       console.log('Mark all read error:', err.message);
@@ -138,7 +136,7 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
     <View style={styles.root}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={COLORS.primary || '#3478F6'} />
+          <Ionicons name="arrow-back" size={22} color={colors.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notifications</Text>
         <TouchableOpacity onPress={handleMarkAllRead} style={styles.markAllBtn}>
@@ -148,7 +146,7 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={COLORS.primary || '#3478F6'} />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : error ? (
         <View style={styles.center}>
@@ -156,7 +154,7 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
         </View>
       ) : notifications.length === 0 ? (
         <View style={styles.center}>
-          <Ionicons name="notifications-outline" size={40} color={COLORS.textSecondary || '#7E8494'} />
+          <Ionicons name="notifications-outline" size={40} color={colors.textSecondary} />
           <Text style={styles.emptyText}>You're all caught up.</Text>
         </View>
       ) : (
@@ -172,51 +170,49 @@ export default function NotificationsScreen({ navigation }: NotificationsScreenP
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background || '#11141A' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: 56,
-    paddingHorizontal: SIZES.padding || 16,
-    paddingBottom: 16,
-  },
-  backBtn: { width: 40 },
-  markAllBtn: { paddingVertical: 4, paddingHorizontal: 4 },
-  markAllText: { color: COLORS.primary || '#3478F6', fontSize: 13, fontWeight: '600' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.textMain || '#FFF' },
-
-  listContent: { paddingHorizontal: SIZES.padding || 16, paddingBottom: 40 },
-
-  card: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface || '#1C212D',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.border || '#2A3245',
-    padding: 14,
-    marginBottom: 10,
-    gap: 12,
-  },
-  cardUnread: {
-    borderColor: COLORS.primary || '#3478F6',
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textWrap: { flex: 1 },
-  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  title: { color: COLORS.textMain || '#FFF', fontSize: 14, fontWeight: '700', flexShrink: 1 },
-  unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.primary || '#3478F6' },
-  message: { color: COLORS.textSecondary || '#7E8494', fontSize: 13, marginTop: 4, lineHeight: 18 },
-  time: { color: COLORS.textSecondary || '#7E8494', fontSize: 11, marginTop: 6 },
-
-  errorText: { color: COLORS.textSecondary || '#7E8494', fontSize: 14, textAlign: 'center', paddingHorizontal: 30 },
-  emptyText: { color: COLORS.textSecondary || '#7E8494', fontSize: 14 },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingTop: 56,
+      paddingHorizontal: SIZES.padding,
+      paddingBottom: 16,
+    },
+    backBtn: { width: 40 },
+    markAllBtn: { paddingVertical: 4, paddingHorizontal: 4 },
+    markAllText: { color: c.primary, fontSize: 13, fontWeight: '600' },
+    headerTitle: { fontSize: 18, fontWeight: '700', color: c.textMain },
+    listContent: { paddingHorizontal: SIZES.padding, paddingBottom: 40 },
+    card: {
+      flexDirection: 'row',
+      backgroundColor: c.surface,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 14,
+      marginBottom: 10,
+      gap: 12,
+    },
+    cardUnread: {
+      borderColor: c.primary,
+    },
+    iconWrap: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    textWrap: { flex: 1 },
+    titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    title: { color: c.textMain, fontSize: 14, fontWeight: '700', flexShrink: 1 },
+    unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: c.primary },
+    message: { color: c.textSecondary, fontSize: 13, marginTop: 4, lineHeight: 18 },
+    time: { color: c.textSecondary, fontSize: 11, marginTop: 6 },
+    errorText: { color: c.textSecondary, fontSize: 14, textAlign: 'center', paddingHorizontal: 30 },
+    emptyText: { color: c.textSecondary, fontSize: 14 },
+  });

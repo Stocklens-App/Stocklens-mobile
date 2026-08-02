@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View, Alert, ActivityIndicator } from 'react-native';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 // @ts-ignore - AppContext is still a plain JS module
 import { useAppContext, api } from '../context/AppContext';
 import { validateOtp, sanitizeDigits } from '../utils/validation';
@@ -18,6 +19,9 @@ type VerifyOtpScreenProps = {
 };
 
 export default function VerifyOtpScreen({ route, navigation }: VerifyOtpScreenProps) {
+  const { colors } = useTheme();
+  const style = makeStyles(colors);
+
   const email = route?.params?.email ?? '';
   const [code, setCode] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -33,11 +37,9 @@ export default function VerifyOtpScreen({ route, navigation }: VerifyOtpScreenPr
       Alert.alert('Check the code', codeError);
       return;
     }
-
     setLoading(true);
     try {
       const { data } = await api.post('/auth/verify-otp', { email, code: code.trim() });
-
       if (data.token) {
         // Verified — signing in swaps the navigator to the app stack automatically.
         await signIn(data.token, data.email, data.name || 'User');
@@ -78,7 +80,7 @@ export default function VerifyOtpScreen({ route, navigation }: VerifyOtpScreenPr
         <TextInput
           style={style.codeInput}
           placeholder="000000"
-          placeholderTextColor={COLORS.textSecondary}
+          placeholderTextColor={colors.textSecondary}
           value={code}
           onChangeText={(val) => setCode(sanitizeDigits(val, 6))}
           keyboardType="number-pad"
@@ -87,11 +89,11 @@ export default function VerifyOtpScreen({ route, navigation }: VerifyOtpScreenPr
         />
 
         <TouchableOpacity style={style.button} onPress={handleVerify} disabled={loading}>
-          {loading ? <ActivityIndicator color={COLORS.textMain} /> : <Text style={style.buttonText}>Verify</Text>}
+          {loading ? <ActivityIndicator color={colors.textMain} /> : <Text style={style.buttonText}>Verify</Text>}
         </TouchableOpacity>
 
         <TouchableOpacity style={style.toggleLink} onPress={handleResend} disabled={resending}>
-          <Text style={style.toggleText}>{resending ? 'Sending…' : "Didn't get it? Resend code"}</Text>
+          <Text style={style.toggleText}>{resending ? 'Sending...' : "Didn't get it? Resend code"}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={style.forgotLink} onPress={() => navigation.replace('Login')}>
@@ -102,47 +104,48 @@ export default function VerifyOtpScreen({ route, navigation }: VerifyOtpScreenPr
   );
 }
 
-const style = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: SIZES.padding,
-  },
-  logoText: { fontSize: 30, fontWeight: 'bold', color: COLORS.primary, marginBottom: 8 },
-  subTitle: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-    marginBottom: 40,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  emailText: { color: COLORS.textMain, fontWeight: '600' },
-  inputContainer: { width: '100%', maxWidth: 320 },
-  codeInput: {
-    backgroundColor: COLORS.surface,
-    color: COLORS.textMain,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    borderRadius: SIZES.radius,
-    fontSize: 28,
-    letterSpacing: 10,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    fontWeight: '700',
-  },
-  button: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: 14,
-    borderRadius: SIZES.radius,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonText: { color: COLORS.textMain, fontSize: 16, fontWeight: '600' },
-  toggleLink: { marginTop: 20, alignItems: 'center' },
-  toggleText: { color: COLORS.primary, fontSize: 14, fontWeight: '500' },
-  forgotLink: { marginTop: 14, alignItems: 'center' },
-  forgotText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '500' },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: SIZES.padding,
+    },
+    logoText: { fontSize: 30, fontWeight: 'bold', color: c.primary, marginBottom: 8 },
+    subTitle: {
+      fontSize: 14,
+      color: c.textSecondary,
+      marginBottom: 40,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    emailText: { color: c.textMain, fontWeight: '600' },
+    inputContainer: { width: '100%', maxWidth: 320 },
+    codeInput: {
+      backgroundColor: c.surface,
+      color: c.textMain,
+      paddingHorizontal: 16,
+      paddingVertical: 16,
+      borderRadius: SIZES.radius,
+      fontSize: 28,
+      letterSpacing: 10,
+      marginBottom: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      fontWeight: '700',
+    },
+    button: {
+      backgroundColor: c.primary,
+      paddingVertical: 14,
+      borderRadius: SIZES.radius,
+      alignItems: 'center',
+      marginTop: 10,
+    },
+    buttonText: { color: c.textMain, fontSize: 16, fontWeight: '600' },
+    toggleLink: { marginTop: 20, alignItems: 'center' },
+    toggleText: { color: c.primary, fontSize: 14, fontWeight: '500' },
+    forgotLink: { marginTop: 14, alignItems: 'center' },
+    forgotText: { color: c.textSecondary, fontSize: 13, fontWeight: '500' },
+  });

@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline } from 'react-native-svg';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 // @ts-ignore - AppContext is still a plain JS module
 import { useAppContext } from '../context/AppContext';
 
@@ -39,7 +40,6 @@ const Sparkline = ({ data, color, width = 60, height = 30 }: SparklineProps) => 
   const min = Math.min(...data);
   const range = max - min || 1;
   const stepX = width / (data.length - 1);
-
   const points = data
     .map((val, i) => {
       const x = i * stepX;
@@ -47,7 +47,6 @@ const Sparkline = ({ data, color, width = 60, height = 30 }: SparklineProps) => 
       return `${x},${y}`;
     })
     .join(' ');
-
   return (
     <Svg width={width} height={height}>
       <Polyline
@@ -73,6 +72,9 @@ interface DashboardScreenProps {
 }
 
 export default function DashboardScreen({ route, navigation }: DashboardScreenProps) {
+  const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
+
   const { userName: contextName, stocks, stocksLoading, stocksError, scamAlerts } = useAppContext();
 
   const rawName = route?.params?.userName || contextName || 'User';
@@ -82,12 +84,10 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
   const pulse = useMemo(() => {
     const list: Stock[] = (stocks || []).filter((s: Stock) => s.currentPrice > 0);
     if (list.length === 0) return null;
-
     const byChange = [...list].sort(
       (a, b) => b.priceChangePercentage - a.priceChangePercentage
     );
     const byVolume = [...list].sort((a, b) => (b.volume || 0) - (a.volume || 0));
-
     return {
       topGainer: byChange[0],
       topLoser: byChange[byChange.length - 1],
@@ -112,7 +112,7 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
   if (stocksLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.primary || '#3478F6'} />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
@@ -120,7 +120,7 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
   if (stocksError) {
     return (
       <View style={styles.loadingContainer}>
-        <Ionicons name="cloud-offline-outline" size={48} color={COLORS.textSecondary || '#7E8494'} />
+        <Ionicons name="cloud-offline-outline" size={48} color={colors.textSecondary} />
         <Text style={styles.errorText}>{stocksError}</Text>
       </View>
     );
@@ -128,7 +128,7 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.background || '#11141A'} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -141,10 +141,10 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
             onPress={() => navigation.navigate('Profile')}
             activeOpacity={0.6}
           >
-            <Ionicons name="person-circle" size={36} color={COLORS.primary || '#3478F6'} />
+            <Ionicons name="person-circle" size={36} color={colors.primary} />
             <View style={styles.nameAndChevronRow}>
               <Text style={styles.userName}>{displayName}</Text>
-              <Ionicons name="chevron-forward" size={16} color={COLORS.textSecondary || '#7E8494'} />
+              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </View>
           </TouchableOpacity>
         </View>
@@ -162,18 +162,18 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
 
             {/* Breadth bar: how much of the market moved which way */}
             <View style={styles.breadthRow}>
-              <Text style={[styles.breadthLabel, { color: COLORS.success }]}>
+              <Text style={[styles.breadthLabel, { color: colors.success }]}>
                 {pulse.advancers} up
               </Text>
               <Text style={styles.breadthLabel}>{pulse.unchanged} flat</Text>
-              <Text style={[styles.breadthLabel, { color: COLORS.error }]}>
+              <Text style={[styles.breadthLabel, { color: colors.error }]}>
                 {pulse.decliners} down
               </Text>
             </View>
             <View style={styles.breadthBar}>
-              <View style={[styles.breadthSeg, { flex: pulse.advancers || 0.01, backgroundColor: COLORS.success }]} />
-              <View style={[styles.breadthSeg, { flex: pulse.unchanged || 0.01, backgroundColor: COLORS.border }]} />
-              <View style={[styles.breadthSeg, { flex: pulse.decliners || 0.01, backgroundColor: COLORS.error }]} />
+              <View style={[styles.breadthSeg, { flex: pulse.advancers || 0.01, backgroundColor: colors.success }]} />
+              <View style={[styles.breadthSeg, { flex: pulse.unchanged || 0.01, backgroundColor: colors.border }]} />
+              <View style={[styles.breadthSeg, { flex: pulse.decliners || 0.01, backgroundColor: colors.error }]} />
             </View>
 
             {/* Movers */}
@@ -185,7 +185,7 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
               >
                 <Text style={styles.moverLabel}>Top gainer</Text>
                 <Text style={styles.moverSymbol}>{pulse.topGainer.symbol}</Text>
-                <Text style={[styles.moverChange, { color: COLORS.success }]}>
+                <Text style={[styles.moverChange, { color: colors.success }]}>
                   ↑ {pulse.topGainer.priceChangePercentage.toFixed(2)}%
                 </Text>
               </TouchableOpacity>
@@ -197,7 +197,7 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
               >
                 <Text style={styles.moverLabel}>Top loser</Text>
                 <Text style={styles.moverSymbol}>{pulse.topLoser.symbol}</Text>
-                <Text style={[styles.moverChange, { color: COLORS.error }]}>
+                <Text style={[styles.moverChange, { color: colors.error }]}>
                   ↓ {Math.abs(pulse.topLoser.priceChangePercentage).toFixed(2)}%
                 </Text>
               </TouchableOpacity>
@@ -229,7 +229,7 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
           {trending.length > 0 ? (
             trending.map((stock, idx) => {
               const positive = stock.priceChangePercentage >= 0;
-              const color = positive ? COLORS.success : COLORS.error;
+              const color = positive ? colors.success : colors.error;
               return (
                 <TouchableOpacity
                   key={stock.symbol}
@@ -237,7 +237,7 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
                   activeOpacity={0.7}
                   onPress={() => openStock(stock)}
                 >
-                  <View style={[styles.stockLogo, { backgroundColor: stock.logoColor || COLORS.primary }]}>
+                  <View style={[styles.stockLogo, { backgroundColor: stock.logoColor || colors.primary }]}>
                     <Text style={styles.stockInitials}>{initialsFor(stock.symbol)}</Text>
                   </View>
                   <View style={styles.stockInfo}>
@@ -264,7 +264,7 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
         {/* SCAM ALERTS */}
         {scamAlerts?.map((alert: string, idx: number) => (
           <View key={idx} style={styles.scamAlert}>
-            <Ionicons name="warning-outline" size={20} color={COLORS.error} />
+            <Ionicons name="warning-outline" size={20} color={colors.error} />
             <View style={styles.scamText}>
               <Text style={styles.scamLabel}>SCAM ALERT</Text>
               <Text style={styles.scamMessage}>{alert}</Text>
@@ -276,99 +276,93 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background || '#11141A' },
-  scroll: { flex: 1 },
-  scrollContent: { padding: SIZES.padding || 16, paddingTop: 60, paddingBottom: 40 },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: COLORS.background || '#11141A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  errorText: {
-    fontSize: 14,
-    color: COLORS.textSecondary || '#7E8494',
-    textAlign: 'center',
-    paddingHorizontal: 40,
-  },
-
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-  profileHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  nameAndChevronRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  userName: { fontSize: 18, fontWeight: 'bold', color: COLORS.textMain || '#FFF' },
-
-  card: {
-    backgroundColor: COLORS.surface || '#1C212D',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border || '#2A3245',
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 14,
-  },
-  cardTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMain || '#FFF', marginBottom: 2 },
-  cardSubtitle: { fontSize: 11, color: COLORS.textSecondary || '#7E8494' },
-  todayLabel: { fontSize: 12, color: COLORS.textSecondary || '#7E8494' },
-
-  breadthRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  breadthLabel: { fontSize: 11, fontWeight: '600', color: COLORS.textSecondary || '#7E8494' },
-  breadthBar: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 18 },
-  breadthSeg: { height: 6 },
-
-  moversRow: { flexDirection: 'row', gap: 8 },
-  moverCell: {
-    flex: 1,
-    backgroundColor: COLORS.background || '#11141A',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border || '#2A3245',
-    padding: 12,
-  },
-  moverLabel: { fontSize: 10, color: COLORS.textSecondary || '#7E8494', marginBottom: 6 },
-  moverSymbol: { fontSize: 14, fontWeight: '700', color: COLORS.textMain || '#FFF', marginBottom: 3 },
-  moverChange: { fontSize: 12, fontWeight: '600' },
-  moverVolume: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary || '#7E8494' },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMain || '#FFF' },
-  seeAll: { fontSize: 13, color: COLORS.primary || '#3478F6', fontWeight: '500' },
-
-  stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 10 },
-  stockRowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border || '#2A3245' },
-  stockLogo: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  stockInitials: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  stockInfo: { flex: 1, minWidth: 0 },
-  stockName: { fontSize: 13, fontWeight: '600', color: COLORS.textMain || '#FFF', marginBottom: 2 },
-  stockTicker: { fontSize: 11, color: COLORS.textSecondary || '#7E8494' },
-  stockPriceCol: { alignItems: 'flex-end', marginRight: 6 },
-  stockPrice: { fontSize: 13, fontWeight: '700', color: COLORS.textMain || '#FFF', marginBottom: 2 },
-  stockChange: { fontSize: 11, fontWeight: '600' },
-  emptyRow: { fontSize: 13, color: COLORS.textSecondary || '#7E8494', textAlign: 'center', paddingVertical: 16 },
-
-  scamAlert: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: COLORS.surface || '#1C212D',
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: COLORS.error,
-    padding: 16,
-    marginBottom: 12,
-    gap: 10,
-  },
-  scamText: { flex: 1 },
-  scamLabel: { fontSize: 12, fontWeight: '700', color: COLORS.error, marginBottom: 4, letterSpacing: 0.5 },
-  scamMessage: { fontSize: 12, color: COLORS.textSecondary || '#7E8494', lineHeight: 18 },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    scroll: { flex: 1 },
+    scrollContent: { padding: SIZES.padding, paddingTop: 60, paddingBottom: 40 },
+    loadingContainer: {
+      flex: 1,
+      backgroundColor: c.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+    },
+    errorText: {
+      fontSize: 14,
+      color: c.textSecondary,
+      textAlign: 'center',
+      paddingHorizontal: 40,
+    },
+    header: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
+    profileHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    nameAndChevronRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    userName: { fontSize: 18, fontWeight: 'bold', color: c.textMain },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 16,
+      marginBottom: 16,
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: 14,
+    },
+    cardTitle: { fontSize: 16, fontWeight: '700', color: c.textMain, marginBottom: 2 },
+    cardSubtitle: { fontSize: 11, color: c.textSecondary },
+    todayLabel: { fontSize: 12, color: c.textSecondary },
+    breadthRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+    breadthLabel: { fontSize: 11, fontWeight: '600', color: c.textSecondary },
+    breadthBar: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 18 },
+    breadthSeg: { height: 6 },
+    moversRow: { flexDirection: 'row', gap: 8 },
+    moverCell: {
+      flex: 1,
+      backgroundColor: c.background,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 12,
+    },
+    moverLabel: { fontSize: 10, color: c.textSecondary, marginBottom: 6 },
+    moverSymbol: { fontSize: 14, fontWeight: '700', color: c.textMain, marginBottom: 3 },
+    moverChange: { fontSize: 12, fontWeight: '600' },
+    moverVolume: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: c.textMain },
+    seeAll: { fontSize: 13, color: c.primary, fontWeight: '500' },
+    stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 10 },
+    stockRowBorder: { borderBottomWidth: 1, borderBottomColor: c.border },
+    stockLogo: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    stockInitials: { color: '#fff', fontSize: 11, fontWeight: '700' },
+    stockInfo: { flex: 1, minWidth: 0 },
+    stockName: { fontSize: 13, fontWeight: '600', color: c.textMain, marginBottom: 2 },
+    stockTicker: { fontSize: 11, color: c.textSecondary },
+    stockPriceCol: { alignItems: 'flex-end', marginRight: 6 },
+    stockPrice: { fontSize: 13, fontWeight: '700', color: c.textMain, marginBottom: 2 },
+    stockChange: { fontSize: 11, fontWeight: '600' },
+    emptyRow: { fontSize: 13, color: c.textSecondary, textAlign: 'center', paddingVertical: 16 },
+    scamAlert: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      backgroundColor: c.surface,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: c.error,
+      padding: 16,
+      marginBottom: 12,
+      gap: 10,
+    },
+    scamText: { flex: 1 },
+    scamLabel: { fontSize: 12, fontWeight: '700', color: c.error, marginBottom: 4, letterSpacing: 0.5 },
+    scamMessage: { fontSize: 12, color: c.textSecondary, lineHeight: 18 },
+  });

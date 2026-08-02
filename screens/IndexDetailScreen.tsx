@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Svg, { Polyline } from 'react-native-svg';
-import { COLORS, SIZES } from '../theme';
+import { SIZES, ThemeColors } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 // @ts-ignore - AppContext is still a plain JS module
 import { useAppContext } from '../context/AppContext';
 
@@ -56,7 +57,6 @@ const LargeSparkline = ({ data, color }: LargeSparklineProps) => {
   const min = Math.min(...data);
   const range = max - min || 1;
   const stepX = width / (data.length - 1);
-
   const points = data
     .map((val, i) => {
       const x = i * stepX;
@@ -64,7 +64,6 @@ const LargeSparkline = ({ data, color }: LargeSparklineProps) => {
       return `${x},${y}`;
     })
     .join(' ');
-
   return (
     <Svg width={width} height={height}>
       <Polyline
@@ -92,9 +91,13 @@ interface IndexDetailScreenProps {
 }
 
 export default function IndexDetailScreen({ route, navigation }: IndexDetailScreenProps) {
+  const { colors, isDark } = useTheme();
+  const styles = makeStyles(colors);
+
   const { index } = route!.params;
   const { trendingStocks } = useAppContext();
-  const color = index.positive ? COLORS.success : COLORS.error;
+
+  const color = index.positive ? colors.success : colors.error;
   const description = INDEX_DESCRIPTIONS[index.symbol] || 'No description available.';
 
   // For GSE show real stocks from context, for others show nothing since they're not in our DB
@@ -102,19 +105,18 @@ export default function IndexDetailScreen({ route, navigation }: IndexDetailScre
 
   return (
     <View style={styles.root}>
-      <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={colors.background} />
 
       {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation!.goBack()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={COLORS.textMain} />
+          <Ionicons name="chevron-back" size={24} color={colors.textMain} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{index.name}</Text>
         <View style={{ width: 36 }} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
         {/* PRICE CARD */}
         <View style={styles.priceCard}>
           <View style={styles.priceRow}>
@@ -124,9 +126,7 @@ export default function IndexDetailScreen({ route, navigation }: IndexDetailScre
               <Text style={styles.indexName}>{index.name}</Text>
             </View>
           </View>
-
           <Text style={styles.price}>{index.price.toLocaleString()}</Text>
-
           <View style={styles.changeRow}>
             <View style={[styles.changeBadge, { backgroundColor: color + '22' }]}>
               <Ionicons
@@ -165,7 +165,7 @@ export default function IndexDetailScreen({ route, navigation }: IndexDetailScre
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Top Constituents</Text>
             {topStocks.map((stock, idx) => {
-              const stockColor = stock.positive ? COLORS.success : COLORS.error;
+              const stockColor = stock.positive ? colors.success : colors.error;
               return (
                 <View
                   key={stock.ticker}
@@ -189,48 +189,80 @@ export default function IndexDetailScreen({ route, navigation }: IndexDetailScre
             })}
           </View>
         )}
-
       </ScrollView>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: COLORS.background },
-  scrollContent: { padding: SIZES.padding, paddingBottom: 40 },
-
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: SIZES.padding, paddingTop: 54, paddingBottom: 16, backgroundColor: COLORS.background },
-  backBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textMain },
-
-  priceCard: { backgroundColor: COLORS.surface, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, padding: 20, marginBottom: 16 },
-  priceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  flag: { fontSize: 32 },
-  symbol: { fontSize: 18, fontWeight: '700', color: COLORS.textMain },
-  indexName: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  price: { fontSize: 36, fontWeight: 'bold', color: COLORS.textMain, marginBottom: 12 },
-  changeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  changeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
-  changeText: { fontSize: 14, fontWeight: '600' },
-  todayLabel: { fontSize: 12, color: COLORS.textSecondary },
-
-  card: { backgroundColor: COLORS.surface, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, padding: 16, marginBottom: 16 },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: COLORS.textMain, marginBottom: 14 },
-
-  chartWrapper: { alignItems: 'center', marginBottom: 8 },
-  chartLabels: { flexDirection: 'row', justifyContent: 'space-between' },
-  chartLabel: { fontSize: 11, color: COLORS.textSecondary },
-
-  description: { fontSize: 13, color: COLORS.textSecondary, lineHeight: 20 },
-
-  stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
-  stockRowBorder: { borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  stockLogo: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  stockInitials: { color: '#fff', fontSize: 11, fontWeight: '700' },
-  stockInfo: { flex: 1 },
-  stockName: { fontSize: 13, fontWeight: '600', color: COLORS.textMain, marginBottom: 2 },
-  stockTicker: { fontSize: 11, color: COLORS.textSecondary },
-  stockPriceCol: { alignItems: 'flex-end' },
-  stockPrice: { fontSize: 13, fontWeight: '700', color: COLORS.textMain, marginBottom: 2 },
-  stockChange: { fontSize: 11, fontWeight: '600' },
-});
+const makeStyles = (c: ThemeColors) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: c.background },
+    scrollContent: { padding: SIZES.padding, paddingBottom: 40 },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: SIZES.padding,
+      paddingTop: 54,
+      paddingBottom: 16,
+      backgroundColor: c.background,
+    },
+    backBtn: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTitle: { fontSize: 16, fontWeight: '700', color: c.textMain },
+    priceCard: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 20,
+      marginBottom: 16,
+    },
+    priceRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+    flag: { fontSize: 32 },
+    symbol: { fontSize: 18, fontWeight: '700', color: c.textMain },
+    indexName: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+    price: { fontSize: 36, fontWeight: 'bold', color: c.textMain, marginBottom: 12 },
+    changeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    changeBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 20,
+    },
+    changeText: { fontSize: 14, fontWeight: '600' },
+    todayLabel: { fontSize: 12, color: c.textSecondary },
+    card: {
+      backgroundColor: c.surface,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 16,
+      marginBottom: 16,
+    },
+    cardTitle: { fontSize: 15, fontWeight: '700', color: c.textMain, marginBottom: 14 },
+    chartWrapper: { alignItems: 'center', marginBottom: 8 },
+    chartLabels: { flexDirection: 'row', justifyContent: 'space-between' },
+    chartLabel: { fontSize: 11, color: c.textSecondary },
+    description: { fontSize: 13, color: c.textSecondary, lineHeight: 20 },
+    stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+    stockRowBorder: { borderBottomWidth: 1, borderBottomColor: c.border },
+    stockLogo: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    stockInitials: { color: '#fff', fontSize: 11, fontWeight: '700' },
+    stockInfo: { flex: 1 },
+    stockName: { fontSize: 13, fontWeight: '600', color: c.textMain, marginBottom: 2 },
+    stockTicker: { fontSize: 11, color: c.textSecondary },
+    stockPriceCol: { alignItems: 'flex-end' },
+    stockPrice: { fontSize: 13, fontWeight: '700', color: c.textMain, marginBottom: 2 },
+    stockChange: { fontSize: 11, fontWeight: '600' },
+  });
