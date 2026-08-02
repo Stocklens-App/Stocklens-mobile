@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "package": "com.stocklens.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

@@ -247,20 +247,26 @@ export function AppProvider({ children }: AppProviderProps) {
       .catch((err: Error) => console.log('Profile load error (notifications):', err.message));
   }, [token]);
 
-  const toggleNotifications = async (enabled: boolean): Promise<void> => {
-    setNotificationsEnabled(enabled); // optimistic update
-    try {
+ const toggleNotifications = async (enabled: boolean): Promise<void> => {
+   setNotificationsEnabled(enabled); // optimistic
+   try {
       await api.put('/api/users/notifications', { enabled });
-
-      if (enabled) {
-        const pushToken: string | null = await registerForPushNotificationsAsync();
-        if (pushToken) {
-          await api.post('/api/users/push-token', { pushToken });
-        }
-      }
     } catch (err) {
       console.log('Toggle notifications error:', (err as Error).message);
-      setNotificationsEnabled(!enabled); // revert on failure
+      setNotificationsEnabled(!enabled); // revert ONLY if the save itself failed
+      return;
+    }
+    // Best-effort push registration. Fails in Expo Go (unsupported since SDK 53),
+    // works in the built APK. Must never revert the saved preference.
+    if (enabled) {
+     try {
+       const pushToken = await registerForPushNotificationsAsync();
+       if (pushToken) {
+         await api.post('/api/users/push-token', { pushToken });
+       }
+      } catch (err) {
+        console.log('Push registration skipped (unsupported in Expo Go):', (err as Error).message);
+      }
     }
   };
 
