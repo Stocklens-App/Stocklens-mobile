@@ -1,5 +1,5 @@
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, {useState} from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer, DarkTheme, DefaultTheme, Theme } from '@react-navigation/native';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
@@ -103,15 +103,12 @@ function MainTabNavigator({ route }: MainTabNavigatorProps) {
 function RootNavigator() {
   const { token, booting } = useAppContext();
   const { colors } = useTheme();
+  const [animationDone, setAnimationDone] = useState(false);
 
-  // Still reading the stored session — don't decide anything yet, or a
-  // returning user sees the login screen flash before landing on Home.
-  if (booting) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+  // Show the animated splash on every cold start — during the session
+  // check AND until the animation finishes — then route by token.
+  if (booting || !animationDone) {
+    return <SplashScreen onFinish={() => setAnimationDone(true)} />;
   }
 
   return (
@@ -144,13 +141,8 @@ function RootNavigator() {
           <Stack.Screen name="StockDetail" component={StockDetailScreen} />
         </>
       ) : (
-        // ── Signed out ──
+        // ── Signed out ── (Splash is no longer a route here)
         <>
-          <Stack.Screen
-            name="Splash"
-            component={SplashScreen}
-            options={{ gestureEnabled: false, ...TransitionPresets.FadeFromBottomAndroid }}
-          />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="VerifyOtp" component={VerifyOtpScreen} />

@@ -18,12 +18,10 @@ const BARS = [
 const L = { cx: 450, cy: 477, r: 181, ring: 42, inner: 158 };
 
 type SplashScreenProps = {
-  navigation: {
-    replace: (screen: string, params?: Record<string, unknown>) => void;
-  };
+  onFinish: () => void; 
 };
 
-export default function SplashScreen({ navigation }: SplashScreenProps) {
+export default function SplashScreen({ onFinish }: SplashScreenProps) {
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
 
@@ -73,7 +71,7 @@ export default function SplashScreen({ navigation }: SplashScreenProps) {
     const t = setTimeout(() => {
       Animated.timing(exit, {
         toValue: 0, duration: 420, useNativeDriver: true,
-      }).start(() => navigation.replace('Login'));
+      }).start(() => onFinish());
     }, 2800);
 
     return () => clearTimeout(t);
