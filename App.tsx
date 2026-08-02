@@ -50,7 +50,7 @@ function MainTabNavigator({ route }: MainTabNavigatorProps) {
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: { backgroundColor: colors.surface, borderTopColor: colors.border, paddingBottom: 5 },
         headerStyle: { backgroundColor: colors.background, borderBottomColor: colors.border, elevation: 0, shadowOpacity: 0 },
-        headerTitleStyle: { color: colors.textMain, fontWeight: 'bold' },
+        headerTitleStyle: { color: colors.textMain, fontWeight: 'bold', fontSize: 25 },
         headerTitleAlign: 'center',
       }}
     >
@@ -71,7 +71,7 @@ function MainTabNavigator({ route }: MainTabNavigatorProps) {
         component={InvestScreen}
         options={{
           tabBarLabel: 'Invest',
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+          tabBarIcon: ({ color, size }: { color: string; size:number }) => (
             <Ionicons name="cube" size={size} color={color} />
           ),
         }}
@@ -80,7 +80,6 @@ function MainTabNavigator({ route }: MainTabNavigatorProps) {
         name="Pulse"
         component={PulseScreen}
         options={{
-          tabBarLabel: 'Pulse',
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="analytics" size={size} color={color} />
           ),
@@ -90,7 +89,6 @@ function MainTabNavigator({ route }: MainTabNavigatorProps) {
         name="Learn"
         component={LearnScreen}
         options={{
-          headerShown: false,
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="book" size={size} color={color} />
           ),

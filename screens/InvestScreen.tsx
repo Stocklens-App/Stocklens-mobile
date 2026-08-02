@@ -1,5 +1,5 @@
 // screens/InvestScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,10 @@ import {
   FlatList,
   StyleSheet,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SIZES, ThemeColors } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useAppContext } from '../context/AppContext';
@@ -22,6 +25,15 @@ type Stock = {
   logoColor?: string;
 };
 
+type SortKey = 'name' | 'priceDesc' | 'gainers' | 'losers';
+
+const SORT_OPTIONS: { key: SortKey; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+  { key: 'name', label: 'Name (A–Z)', icon: 'text-outline' },
+  { key: 'priceDesc', label: 'Price (high → low)', icon: 'cash-outline' },
+  { key: 'gainers', label: 'Biggest gainers', icon: 'trending-up-outline' },
+  { key: 'losers', label: 'Biggest losers', icon: 'trending-down-outline' },
+];
+
 type InvestScreenProps = {
   navigation: {
     navigate: (screen: string, params?: Record<string, unknown>) => void;
@@ -32,7 +44,6 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
 
-  // Stocks are prefetched at app startup by AppContext — no fetch here.
   const {
     stocks,
     stocksLoading: loading,
@@ -41,15 +52,34 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
   } = useAppContext();
 
   const [query, setQuery] = useState<string>('');
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortMenuOpen, setSortMenuOpen] = useState<boolean>(false);
 
-  const visibleStocks: Stock[] = stocks.filter((stock: Stock) => {
+  const visibleStocks: Stock[] = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (q === '') return true;
-    return (
-      stock.name.toLowerCase().includes(q) ||
-      stock.symbol.toLowerCase().includes(q)
+    const filtered = stocks.filter((stock: Stock) =>
+      q === '' ? true : stock.name.toLowerCase().includes(q) || stock.symbol.toLowerCase().includes(q)
     );
-  });
+    const sorted = [...filtered];
+    switch (sortKey) {
+      case 'priceDesc':
+        sorted.sort((a, b) => b.currentPrice - a.currentPrice);
+        break;
+      case 'gainers':
+        sorted.sort((a, b) => b.priceChangePercentage - a.priceChangePercentage);
+        break;
+      case 'losers':
+        sorted.sort((a, b) => a.priceChangePercentage - b.priceChangePercentage);
+        break;
+      case 'name':
+      default:
+        sorted.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+    }
+    return sorted;
+  }, [stocks, query, sortKey]);
+
+  const activeSortLabel = SORT_OPTIONS.find((o) => o.key === sortKey)?.label ?? '';
 
   const renderStock = ({ item }: { item: Stock }) => {
     const isUp = item.priceChangePercentage >= 0;
@@ -68,15 +98,11 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
 
         <View style={styles.info}>
           <Text style={styles.ticker}>{item.symbol}</Text>
-          <Text style={styles.name} numberOfLines={1}>
-            {item.name}
-          </Text>
+          <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
         </View>
 
         <View style={styles.priceBox}>
-          <Text style={styles.price}>
-            ₵{item.currentPrice.toFixed(2)}
-          </Text>
+          <Text style={styles.price}>₵{item.currentPrice.toFixed(2)}</Text>
           <Text style={[styles.change, { color: changeColor }]}>
             {arrow} {Math.abs(item.priceChangePercentage).toFixed(2)}%
           </Text>
@@ -120,11 +146,7 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
           <Text style={styles.errorIcon}>⚠</Text>
           <Text style={styles.errorTitle}>Something went wrong</Text>
           <Text style={styles.errorMessage}>{error}</Text>
-          <TouchableOpacity
-            style={styles.retryButton}
-            onPress={fetchStocks}
-            activeOpacity={0.7}
-          >
+          <TouchableOpacity style={styles.retryButton} onPress={fetchStocks} activeOpacity={0.7}>
             <Text style={styles.retryText}>Try again</Text>
           </TouchableOpacity>
         </View>
@@ -134,16 +156,29 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.search}>
-        <Text style={styles.searchIcon}>⌕</Text>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="   Search stocks"
-          placeholderTextColor={colors.textSecondary}
-          value={query}
-          onChangeText={setQuery}
-        />
+      {/* Search + sort */}
+      <View style={styles.searchRow}>
+        <View style={styles.search}>
+          <Ionicons name="search" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search stocks"
+            placeholderTextColor={colors.textSecondary}
+            value={query}
+            onChangeText={setQuery}
+          />
+        </View>
+        <TouchableOpacity
+          style={styles.sortButton}
+          onPress={() => setSortMenuOpen(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="swap-vertical" size={20} color={colors.primary} />
+        </TouchableOpacity>
       </View>
+
+      {/* Active sort caption */}
+      <Text style={styles.sortCaption}>Sorted by {activeSortLabel.toLowerCase()}</Text>
 
       <FlatList
         data={visibleStocks}
@@ -151,10 +186,32 @@ export default function InvestScreen({ navigation }: InvestScreenProps) {
         keyExtractor={(item) => item.id.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          <Text style={styles.empty}>No stocks match your search.</Text>
-        }
+        ListEmptyComponent={<Text style={styles.empty}>No stocks match your search.</Text>}
       />
+
+      {/* Sort menu */}
+      <Modal visible={sortMenuOpen} transparent animationType="fade" onRequestClose={() => setSortMenuOpen(false)}>
+        <Pressable style={styles.menuOverlay} onPress={() => setSortMenuOpen(false)}>
+          <View style={styles.menuCard}>
+            <Text style={styles.menuTitle}>Sort by</Text>
+            {SORT_OPTIONS.map((opt) => {
+              const active = opt.key === sortKey;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={styles.menuRow}
+                  onPress={() => { setSortKey(opt.key); setSortMenuOpen(false); }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={opt.icon} size={18} color={active ? colors.primary : colors.textSecondary} />
+                  <Text style={[styles.menuLabel, active && styles.menuLabelActive]}>{opt.label}</Text>
+                  {active && <Ionicons name="checkmark" size={18} color={colors.primary} style={{ marginLeft: 'auto' }} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -167,24 +224,9 @@ const makeStyles = (c: ThemeColors) =>
       paddingHorizontal: SIZES.padding,
       paddingTop: SIZES.padding,
     },
-    text: {
-      color: c.textMain,
-      fontSize: 18,
-      fontWeight: 'bold',
-    },
-    h1: {
-      color: c.textMain,
-      fontSize: 28,
-      fontWeight: '700',
-      letterSpacing: -0.5,
-    },
-    subtitle: {
-      color: c.textSecondary,
-      fontSize: 13,
-      marginTop: 4,
-      marginBottom: 18,
-    },
+    searchRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     search: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: c.surface,
@@ -192,24 +234,26 @@ const makeStyles = (c: ThemeColors) =>
       borderColor: c.border,
       borderRadius: 12,
       paddingHorizontal: 14,
-      paddingVertical: 6,
-      marginBottom: 4,
+      paddingVertical: 10,
     },
-    searchIcon: {
+    searchInput: { flex: 1, color: c.textMain, fontSize: 15, padding: 0 },
+    sortButton: {
+      width: 46,
+      height: 46,
+      borderRadius: 12,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    sortCaption: {
       color: c.textSecondary,
-      fontSize: 30,
-      marginRight: 10,
+      fontSize: 12,
+      marginTop: 10,
+      marginBottom: 2,
     },
-    searchInput: {
-      flex: 1,
-      color: c.textMain,
-      fontSize: 18,
-      padding: 0,
-    },
-    listContent: {
-      paddingTop: 8,
-      paddingBottom: 24,
-    },
+    listContent: { paddingTop: 8, paddingBottom: 24 },
     row: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -217,66 +261,21 @@ const makeStyles = (c: ThemeColors) =>
       borderBottomWidth: 1,
       borderBottomColor: c.border,
     },
-    logoWrapper: {
-      width: 44,
-      height: 44,
-      marginRight: 12,
-      borderRadius: 11,
-      overflow: 'hidden',
-      backgroundColor: c.surface,
-    },
-    logoImage: {
-      width: '100%',
-      height: '100%',
-    },
     logoFallback: {
       width: 44,
       height: 44,
-      borderRadius: 11,
+      borderRadius: 12,
       alignItems: 'center',
       justifyContent: 'center',
     },
-    logoText: {
-      color: '#FFFFFF',
-      fontWeight: '700',
-      fontSize: 13,
-      letterSpacing: 0.5,
-    },
-    info: {
-      flex: 1,
-      minWidth: 0,
-    },
-    ticker: {
-      color: c.textMain,
-      fontSize: 15,
-      fontWeight: '600',
-      marginLeft: 12,
-    },
-    name: {
-      color: c.textSecondary,
-      fontSize: 12,
-      marginTop: 1,
-      marginLeft: 12,
-    },
-    priceBox: {
-      alignItems: 'flex-end',
-    },
-    price: {
-      color: c.textMain,
-      fontSize: 15,
-      fontWeight: '600',
-    },
-    change: {
-      fontSize: 12,
-      fontWeight: '600',
-      marginTop: 2,
-    },
-    empty: {
-      color: c.textSecondary,
-      fontSize: 14,
-      textAlign: 'center',
-      marginTop: 40,
-    },
+    logoText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13, letterSpacing: 0.5 },
+    info: { flex: 1, minWidth: 0 },
+    ticker: { color: c.textMain, fontSize: 17, fontWeight: '700', marginLeft: 12 },
+    name: { color: c.textSecondary, fontSize: 14, marginTop: 1, marginLeft: 12 },
+    priceBox: { alignItems: 'flex-end' },
+    price: { color: c.textMain, fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'] },
+    change: { fontSize: 12, fontWeight: '600', marginTop: 2, fontVariant: ['tabular-nums'] },
+    empty: { color: c.textSecondary, fontSize: 14, textAlign: 'center', marginTop: 40 },
     loadingHeader: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -284,53 +283,44 @@ const makeStyles = (c: ThemeColors) =>
       paddingVertical: 14,
       gap: 10,
     },
-    loadingText: {
-      color: c.textSecondary,
-      fontSize: 13,
-    },
-    skeleton: {
-      backgroundColor: c.surface,
-      opacity: 0.5,
-    },
-    skeletonLine: {
-      height: 10,
-      backgroundColor: c.surface,
-      borderRadius: 3,
-      opacity: 0.5,
-    },
-    errorBox: {
+    loadingText: { color: c.textSecondary, fontSize: 13 },
+    skeleton: { backgroundColor: c.surface, opacity: 0.5 },
+    skeletonLine: { height: 10, backgroundColor: c.surface, borderRadius: 3, opacity: 0.5 },
+    errorBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30 },
+    errorIcon: { fontSize: 48, color: c.error, marginBottom: 12 },
+    errorTitle: { color: c.textMain, fontSize: 18, fontWeight: '600', marginBottom: 8 },
+    errorMessage: { color: c.textSecondary, fontSize: 14, textAlign: 'center', marginBottom: 24, lineHeight: 20 },
+    retryButton: { backgroundColor: c.primary, paddingHorizontal: 28, paddingVertical: 12, borderRadius: 10 },
+    retryText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
+    menuOverlay: {
       flex: 1,
-      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.4)',
       justifyContent: 'center',
-      paddingHorizontal: 30,
+      paddingHorizontal: 40,
     },
-    errorIcon: {
-      fontSize: 48,
-      color: c.error,
-      marginBottom: 12,
+    menuCard: {
+      backgroundColor: c.surface,
+      borderRadius: 30,
+      borderWidth: 1,
+      borderColor: c.border,
+      padding: 8,
     },
-    errorTitle: {
-      color: c.textMain,
-      fontSize: 18,
-      fontWeight: '600',
-      marginBottom: 8,
-    },
-    errorMessage: {
+    menuTitle: {
       color: c.textSecondary,
-      fontSize: 14,
-      textAlign: 'center',
-      marginBottom: 24,
-      lineHeight: 20,
+      fontSize: 1,
+      fontWeight: '700',
+      letterSpacing: 1,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
     },
-    retryButton: {
-      backgroundColor: c.primary,
-      paddingHorizontal: 28,
-      paddingVertical: 12,
+    menuRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 14,
       borderRadius: 10,
     },
-    retryText: {
-      color: c.textMain,
-      fontSize: 14,
-      fontWeight: '600',
-    },
+    menuLabel: { color: c.textMain, fontSize: 15 },
+    menuLabelActive: { color: c.primary, fontWeight: '600' },
   });

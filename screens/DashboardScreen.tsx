@@ -63,6 +63,13 @@ const Sparkline = ({ data, color, width = 60, height = 30 }: SparklineProps) => 
 
 const initialsFor = (symbol: string) => symbol.slice(0, 3).toUpperCase();
 
+const greeting = (): string => {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
 interface DashboardScreenProps {
   route: { params?: { userName?: string } };
   navigation: {
@@ -75,12 +82,11 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
   const { colors, isDark } = useTheme();
   const styles = makeStyles(colors);
 
-  const { userName: contextName, stocks, stocksLoading, stocksError, scamAlerts } = useAppContext();
+  const { userName: contextName, stocks, stocksLoading, stocksError, scamAlerts, unreadCount } = useAppContext();
 
   const rawName = route?.params?.userName || contextName || 'User';
-  const displayName = rawName.length > 12 ? `${rawName.slice(0, 12)}...` : rawName;
+  const firstName = rawName.trim().split(' ')[0];
 
-  // Everything below is derived from live GSE prices — no seeded index data.
   const pulse = useMemo(() => {
     const list: Stock[] = (stocks || []).filter((s: Stock) => s.currentPrice > 0);
     if (list.length === 0) return null;
@@ -99,7 +105,6 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
     };
   }, [stocks]);
 
-  // "Trending" now means most actively traded today, by share volume.
   const trending: Stock[] = useMemo(() => {
     return [...(stocks || [])]
       .filter((s: Stock) => (s.volume || 0) > 0)
@@ -134,22 +139,33 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile header */}
+        {/* Header — greeting + profile, with a bell for notifications */}
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.profileHeaderRow}
             onPress={() => navigation.navigate('Profile')}
             activeOpacity={0.6}
           >
-            <Ionicons name="person-circle" size={36} color={colors.primary} />
-            <View style={styles.nameAndChevronRow}>
-              <Text style={styles.userName}>{displayName}</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+            <View style={styles.avatarCircle}>
+              <Ionicons name="person" size={20} color="#FFFFFF" />
             </View>
+            <View>
+              <Text style={styles.greeting}>{greeting()}</Text>
+              <Text style={styles.userName}>{firstName}</Text>
+            </View>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.bellButton}
+            onPress={() => navigation.navigate('Notifications')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.textMain} />
+            {unreadCount > 0 && <View style={styles.bellDot} />}
           </TouchableOpacity>
         </View>
 
-        {/* MARKET PULSE — computed from today's live GSE prices */}
+        {/* MARKET PULSE */}
         {pulse && (
           <View style={styles.card}>
             <View style={styles.cardHeader}>
@@ -157,10 +173,12 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
                 <Text style={styles.cardTitle}>Market Pulse</Text>
                 <Text style={styles.cardSubtitle}>Ghana Stock Exchange today</Text>
               </View>
-              <Text style={styles.todayLabel}>{pulse.total} listed</Text>
+              <View style={styles.livePill}>
+                <View style={styles.liveDot} />
+                <Text style={styles.livePillText}>{pulse.total} listed</Text>
+              </View>
             </View>
 
-            {/* Breadth bar: how much of the market moved which way */}
             <View style={styles.breadthRow}>
               <Text style={[styles.breadthLabel, { color: colors.success }]}>
                 {pulse.advancers} up
@@ -176,38 +194,25 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
               <View style={[styles.breadthSeg, { flex: pulse.decliners || 0.01, backgroundColor: colors.error }]} />
             </View>
 
-            {/* Movers */}
             <View style={styles.moversRow}>
-              <TouchableOpacity
-                style={styles.moverCell}
-                onPress={() => openStock(pulse.topGainer)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.moverLabel}>Top gainer</Text>
+              <TouchableOpacity style={styles.moverCell} onPress={() => openStock(pulse.topGainer)} activeOpacity={0.7}>
+                <Text style={styles.moverLabel}>TOP GAINER</Text>
                 <Text style={styles.moverSymbol}>{pulse.topGainer.symbol}</Text>
                 <Text style={[styles.moverChange, { color: colors.success }]}>
                   ↑ {pulse.topGainer.priceChangePercentage.toFixed(2)}%
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.moverCell}
-                onPress={() => openStock(pulse.topLoser)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.moverLabel}>Top loser</Text>
+              <TouchableOpacity style={styles.moverCell} onPress={() => openStock(pulse.topLoser)} activeOpacity={0.7}>
+                <Text style={styles.moverLabel}>TOP LOSER</Text>
                 <Text style={styles.moverSymbol}>{pulse.topLoser.symbol}</Text>
                 <Text style={[styles.moverChange, { color: colors.error }]}>
                   ↓ {Math.abs(pulse.topLoser.priceChangePercentage).toFixed(2)}%
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.moverCell}
-                onPress={() => openStock(pulse.mostActive)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.moverLabel}>Most traded</Text>
+              <TouchableOpacity style={styles.moverCell} onPress={() => openStock(pulse.mostActive)} activeOpacity={0.7}>
+                <Text style={styles.moverLabel}>MOST TRADED</Text>
                 <Text style={styles.moverSymbol}>{pulse.mostActive.symbol}</Text>
                 <Text style={styles.moverVolume}>
                   {(pulse.mostActive.volume || 0).toLocaleString()}
@@ -221,7 +226,7 @@ export default function DashboardScreen({ route, navigation }: DashboardScreenPr
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Most active today</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Invest')}>
-            <Text style={styles.seeAll}>See all</Text>
+            <Text style={styles.seeAll}>See all ›</Text>
           </TouchableOpacity>
         </View>
 
@@ -294,10 +299,44 @@ const makeStyles = (c: ThemeColors) =>
       textAlign: 'center',
       paddingHorizontal: 40,
     },
-    header: { flexDirection: 'row', alignItems: 'center', marginBottom: 24 },
-    profileHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    nameAndChevronRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    userName: { fontSize: 18, fontWeight: 'bold', color: c.textMain },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 24,
+    },
+    profileHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    avatarCircle: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    greeting: { fontSize: 12, color: c.textSecondary, fontWeight: '600', marginBottom: 1 },
+    userName: { fontSize: 19, fontWeight: 'bold', color: c.textMain },
+    bellButton: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    bellDot: {
+      position: 'absolute',
+      top: 10,
+      right: 11,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: c.error,
+      borderWidth: 1.5,
+      borderColor: c.surface,
+    },
     card: {
       backgroundColor: c.surface,
       borderRadius: 16,
@@ -314,9 +353,19 @@ const makeStyles = (c: ThemeColors) =>
     },
     cardTitle: { fontSize: 16, fontWeight: '700', color: c.textMain, marginBottom: 2 },
     cardSubtitle: { fontSize: 11, color: c.textSecondary },
-    todayLabel: { fontSize: 12, color: c.textSecondary },
+    livePill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: c.primary + '14',
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+    },
+    liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.primary },
+    livePillText: { fontSize: 11, color: c.primary, fontWeight: '600', fontVariant: ['tabular-nums'] },
     breadthRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-    breadthLabel: { fontSize: 11, fontWeight: '600', color: c.textSecondary },
+    breadthLabel: { fontSize: 11, fontWeight: '600', color: c.textSecondary, fontVariant: ['tabular-nums'] },
     breadthBar: { flexDirection: 'row', height: 6, borderRadius: 3, overflow: 'hidden', marginBottom: 18 },
     breadthSeg: { height: 6 },
     moversRow: { flexDirection: 'row', gap: 8 },
@@ -328,28 +377,28 @@ const makeStyles = (c: ThemeColors) =>
       borderColor: c.border,
       padding: 12,
     },
-    moverLabel: { fontSize: 10, color: c.textSecondary, marginBottom: 6 },
+    moverLabel: { fontSize: 9, color: c.textSecondary, marginBottom: 6, letterSpacing: 0.5, fontWeight: '700' },
     moverSymbol: { fontSize: 14, fontWeight: '700', color: c.textMain, marginBottom: 3 },
-    moverChange: { fontSize: 12, fontWeight: '600' },
-    moverVolume: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+    moverChange: { fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
+    moverVolume: { fontSize: 12, fontWeight: '600', color: c.textSecondary, fontVariant: ['tabular-nums'] },
     sectionHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: 12,
     },
-    sectionTitle: { fontSize: 16, fontWeight: '700', color: c.textMain },
-    seeAll: { fontSize: 13, color: c.primary, fontWeight: '500' },
+    sectionTitle: { fontSize: 18, fontWeight: '700', color: c.textMain, letterSpacing: -0.3 },
+    seeAll: { fontSize: 13, color: c.primary, fontWeight: '600' },
     stockRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 10 },
     stockRowBorder: { borderBottomWidth: 1, borderBottomColor: c.border },
     stockLogo: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
     stockInitials: { color: '#fff', fontSize: 11, fontWeight: '700' },
     stockInfo: { flex: 1, minWidth: 0 },
     stockName: { fontSize: 13, fontWeight: '600', color: c.textMain, marginBottom: 2 },
-    stockTicker: { fontSize: 11, color: c.textSecondary },
+    stockTicker: { fontSize: 11, color: c.textSecondary, fontVariant: ['tabular-nums'] },
     stockPriceCol: { alignItems: 'flex-end', marginRight: 6 },
-    stockPrice: { fontSize: 13, fontWeight: '700', color: c.textMain, marginBottom: 2 },
-    stockChange: { fontSize: 11, fontWeight: '600' },
+    stockPrice: { fontSize: 13, fontWeight: '700', color: c.textMain, marginBottom: 2, fontVariant: ['tabular-nums'] },
+    stockChange: { fontSize: 11, fontWeight: '600', fontVariant: ['tabular-nums'] },
     emptyRow: { fontSize: 13, color: c.textSecondary, textAlign: 'center', paddingVertical: 16 },
     scamAlert: {
       flexDirection: 'row',

@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SIZES, ThemeColors } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import { useAppContext } from '../context/AppContext';
@@ -31,7 +32,6 @@ interface Calculation {
   spentOnShares: number;
   buyFees: number;
   leftover: number;
-  // Round-trip: what it costs to sell the same holding later
   sellFees: number;
   breakEvenPct: number;
 }
@@ -46,7 +46,6 @@ export default function PulseScreen() {
   const [query, setQuery] = useState<string>('');
   const [commissionRate, setCommissionRate] = useState<number>(FEES.BROKERAGE_COMMISSION);
 
-  // Only stocks with a real, positive price can be costed.
   const tradableStocks: Stock[] = useMemo(
     () => stocks.filter((s) => s.currentPrice > 0),
     [stocks]
@@ -70,9 +69,6 @@ export default function PulseScreen() {
   const calc: Calculation | null = useMemo(() => {
     if (!stock || !amount || amount <= 0) return null;
     const price = stock.currentPrice;
-    // Work out how many whole shares fit once buy-side fees are covered.
-    // Fees scale with trade value, so solve iteratively: start from the naive
-    // count, then trim until shares + their fees fit inside the budget.
     let shares = Math.floor(amount / price);
     while (shares > 0) {
       const tradeValue = shares * price;
@@ -81,22 +77,12 @@ export default function PulseScreen() {
       shares -= 1;
     }
     if (shares === 0) {
-      return {
-        shares: 0,
-        spentOnShares: 0,
-        buyFees: 0,
-        leftover: amount,
-        sellFees: 0,
-        breakEvenPct: 0,
-      };
+      return { shares: 0, spentOnShares: 0, buyFees: 0, leftover: amount, sellFees: 0, breakEvenPct: 0 };
     }
     const spentOnShares = shares * price;
     const buyFees = calculateFees(spentOnShares, commissionRate).total;
     const leftover = amount - spentOnShares - buyFees;
-    // Selling the same holding later incurs the same class of fees again.
     const sellFees = calculateFees(spentOnShares, commissionRate).total;
-    // The price must rise enough to recover both buy and sell fees before
-    // the position breaks even.
     const breakEvenPct = ((buyFees + sellFees) / spentOnShares) * 100;
     return { shares, spentOnShares, buyFees, leftover, sellFees, breakEvenPct };
   }, [stock, amount, commissionRate]);
@@ -148,7 +134,7 @@ export default function PulseScreen() {
 
         {/* Search + pick a stock */}
         <View style={styles.searchBox}>
-          <Text style={styles.searchIcon}>⌕</Text>
+          <Ionicons name="search" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
           <TextInput
             style={styles.searchInput}
             value={query}
@@ -160,7 +146,7 @@ export default function PulseScreen() {
           />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Text style={styles.searchClear}>✕</Text>
+              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -221,7 +207,7 @@ export default function PulseScreen() {
           ))}
         </View>
 
-        {/* Broker commission selector — it genuinely varies, so let the user match theirs */}
+        {/* Broker commission selector */}
         <Text style={styles.label}>Your broker's commission</Text>
         <View style={styles.chipRow}>
           {COMMISSION_OPTIONS.map((opt) => {
@@ -259,11 +245,10 @@ export default function PulseScreen() {
               </Text>
               <Text style={styles.resultSub}>of {stock.name}</Text>
 
-              {/* Fee breakdown */}
               {feeRows && (
                 <View style={styles.breakdown}>
                   <Row colors={colors} label="Shares" value={fmt(calc.spentOnShares)} />
-                  <Row colors={colors} label={`Broker commission`} value={fmt(feeRows.commission)} />
+                  <Row colors={colors} label="Broker commission" value={fmt(feeRows.commission)} />
                   <Row colors={colors} label="VAT on commission" value={fmt(feeRows.vat)} />
                   <Row colors={colors} label="GSE levy" value={fmt(feeRows.gseLevy)} />
                   <Row colors={colors} label="CSD levy" value={fmt(feeRows.csdLevy)} />
@@ -274,9 +259,8 @@ export default function PulseScreen() {
                 </View>
               )}
 
-              {/* Break-even — the thing beginners never see coming */}
               <View style={styles.breakEvenCard}>
-                <Text style={styles.breakEvenTitle}>Before you make a profit</Text>
+                <Text style={styles.breakEvenTitle}>BEFORE YOU MAKE A PROFIT</Text>
                 <Text style={styles.breakEvenBody}>
                   Selling later costs another {fmt(calc.sellFees)} in fees. The price has to rise
                   about{' '}
@@ -315,7 +299,7 @@ const makeStyles = (c: ThemeColors) =>
   StyleSheet.create({
     flex: { flex: 1, backgroundColor: c.background },
     container: { flex: 1, backgroundColor: c.background },
-    content: { padding: SIZES.padding, paddingBottom: 48 },
+    content: { padding: SIZES.padding, paddingTop: 12, paddingBottom: 48 },
     center: {
       flex: 1,
       backgroundColor: c.background,
@@ -332,41 +316,39 @@ const makeStyles = (c: ThemeColors) =>
       paddingHorizontal: 24,
     },
     retryText: { color: '#FFF', fontSize: 14, fontWeight: '600' },
-    title: { color: c.textMain, fontSize: 22, fontWeight: '700', marginBottom: 6 },
-    subtitle: { color: c.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: 22 },
+    title: { color: c.textMain, fontSize: 23, fontWeight: '800', letterSpacing: -0.5, marginBottom: 6,  },
+    subtitle: { color: c.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: 24 },
     searchBox: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: SIZES.radius,
-      paddingHorizontal: 12,
-      marginBottom: 14,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      marginBottom: 16,
     },
-    searchIcon: { fontSize: 28, marginRight: 8, color: c.textSecondary },
-    searchInput: { flex: 1, color: c.textMain, fontSize: 15, paddingVertical: 12 },
-    searchClear: { color: c.textSecondary, fontSize: 14, paddingHorizontal: 4 },
+    searchInput: { flex: 1, color: c.textMain, fontSize: 15, paddingVertical: 13 },
     noMatch: { color: c.textSecondary, fontSize: 14, marginBottom: 16, fontStyle: 'italic' },
-    pillRow: { gap: 10, paddingRight: 8, marginBottom: 12 },
+    pillRow: { gap: 10, paddingRight: 8, marginBottom: 14 },
     stockPill: {
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: SIZES.radius,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
+      borderRadius: 999,
+      paddingVertical: 7,
+      paddingHorizontal: 10,
       gap: 8,
     },
-    stockPillActive: { borderColor: c.primary },
-    logo: { width: 28, height: 28, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
-    logoText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
-    pillSymbol: { color: c.textSecondary, fontSize: 14, fontWeight: '600' },
+    stockPillActive: { borderColor: c.primary, backgroundColor: c.primary + '14' },
+    logo: { width: 26, height: 26, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+    logoText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
+    pillSymbol: { color: c.textSecondary, fontSize: 13, fontWeight: '600' },
     pillSymbolActive: { color: c.textMain },
-    priceLine: { color: c.textSecondary, fontSize: 13, marginBottom: 22 },
-    priceValue: { color: c.textMain, fontWeight: '700' },
+    priceLine: { color: c.textSecondary, fontSize: 13, marginBottom: 24 },
+    priceValue: { color: c.textMain, fontWeight: '700', fontVariant: ['tabular-nums'] },
     label: { color: c.textMain, fontSize: 15, fontWeight: '600', marginBottom: 12 },
     amountBox: {
       flexDirection: 'row',
@@ -374,16 +356,17 @@ const makeStyles = (c: ThemeColors) =>
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: SIZES.radius,
+      borderRadius: 12,
       paddingHorizontal: 16,
       marginBottom: 12,
     },
-    cedi: { color: c.textSecondary, fontSize: 22, fontFamily: 'Georgia', marginRight: 6 },
+    cedi: { color: c.textSecondary, fontSize: 22, fontWeight: '600', marginRight: 6, fontVariant: ['tabular-nums'] },
     amountInput: {
       flex: 1,
       color: c.textMain,
       fontSize: 22,
-      fontFamily: 'Georgia',
+      fontWeight: '600',
+      fontVariant: ['tabular-nums'],
       paddingVertical: 14,
     },
     chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
@@ -391,18 +374,18 @@ const makeStyles = (c: ThemeColors) =>
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: SIZES.radius,
+      borderRadius: 999,
       paddingVertical: 8,
-      paddingHorizontal: 14,
+      paddingHorizontal: 16,
     },
-    quickChipText: { color: c.textSecondary, fontSize: 13, fontWeight: '600' },
+    quickChipText: { color: c.textSecondary, fontSize: 13, fontWeight: '600', fontVariant: ['tabular-nums'] },
     commissionChip: {
       flex: 1,
       alignItems: 'center',
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: SIZES.radius,
+      borderRadius: 10,
       paddingVertical: 12,
     },
     commissionChipActive: { backgroundColor: c.primary, borderColor: c.primary },
@@ -412,33 +395,34 @@ const makeStyles = (c: ThemeColors) =>
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
-      borderRadius: SIZES.radius,
-      padding: SIZES.padding,
+      borderRadius: 16,
+      padding: 22,
       marginTop: 4,
     },
     resultLead: { color: c.textSecondary, fontSize: 13 },
     sharesValue: {
       color: c.textMain,
-      fontSize: 34,
-      fontFamily: 'Georgia',
+      fontSize: 36,
       fontWeight: '700',
-      marginTop: 2,
+      fontVariant: ['tabular-nums'],
+      letterSpacing: -0.5,
+      marginTop: 4,
     },
     resultSub: { color: c.textSecondary, fontSize: 13, marginTop: 2 },
     notEnoughText: { color: c.textMain, fontSize: 15, lineHeight: 22 },
-    breakdown: { marginTop: 20 },
-    row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5 },
+    breakdown: { marginTop: 22 },
+    row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
     rowLabel: { color: c.textSecondary, fontSize: 13 },
-    rowValue: { color: c.textMain, fontSize: 13, fontWeight: '500' },
+    rowValue: { color: c.textMain, fontSize: 13, fontWeight: '500', fontVariant: ['tabular-nums'] },
     rowStrong: { color: c.textMain, fontWeight: '700', fontSize: 14 },
-    divider: { height: 1, backgroundColor: c.border, marginVertical: 8 },
+    divider: { height: 1, backgroundColor: c.border, marginVertical: 10 },
     breakEvenCard: {
       backgroundColor: c.background,
       borderWidth: 1,
       borderColor: c.border,
       borderRadius: 12,
-      padding: 14,
-      marginTop: 20,
+      padding: 16,
+      marginTop: 22,
     },
     breakEvenTitle: {
       color: c.textSecondary,
@@ -448,14 +432,14 @@ const makeStyles = (c: ThemeColors) =>
       marginBottom: 6,
     },
     breakEvenBody: { color: c.textMain, fontSize: 13, lineHeight: 20 },
-    breakEvenPct: { color: c.primary, fontWeight: '700' },
+    breakEvenPct: { color: c.primary, fontWeight: '700', fontVariant: ['tabular-nums'] },
     disclaimer: { color: c.textSecondary, fontSize: 11, lineHeight: 16, marginTop: 18 },
     emptyState: {
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
       borderStyle: 'dashed',
-      borderRadius: SIZES.radius,
+      borderRadius: 12,
       padding: 28,
       marginTop: 8,
       alignItems: 'center',
