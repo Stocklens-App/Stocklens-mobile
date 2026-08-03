@@ -19,8 +19,6 @@ interface UserData {
   email?: string;
   modulesCompleted?: number;
   streakDays?: number;
-  portfolioValue?: number;
-  portfolioReturnPct?: number;
 }
 
 type ProfileScreenProps = {
@@ -172,33 +170,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           </View>
         </View>
 
-        {/* Portfolio Summary */}
-        <View style={style.card}>
-          <Text style={style.cardTitle}>PORTFOLIO VALUE</Text>
-          <View style={style.portfolioRow}>
-            <View>
-              <Text style={style.portfolioValue}>GH₵ {(userData?.portfolioValue ?? 0).toFixed(2)}</Text>
-              <Text style={style.portfolioReturn}>
-                +{userData?.portfolioReturnPct ?? 0}% <Ionicons name="trending-up" size={13} color={colors.success} />
-              </Text>
-            </View>
-            <Ionicons name="stats-chart" size={30} color={colors.textSecondary} />
-          </View>
-        </View>
-
         {/* Actions */}
         <TouchableOpacity style={style.actionRow} onPress={() => navigation.navigate('AccountSettings')} activeOpacity={0.7}>
           <View style={style.actionLeft}>
             <Ionicons name="settings-outline" size={20} color={colors.primary} />
             <Text style={style.actionText}>Account Settings</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={style.actionRow} onPress={() => navigation.navigate('MyPortfolio')} activeOpacity={0.7}>
-          <View style={style.actionLeft}>
-            <Ionicons name="briefcase-outline" size={20} color={colors.primary} />
-            <Text style={style.actionText}>My Portfolio</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
@@ -313,9 +289,6 @@ const makeStyles = (c: ThemeColors) =>
       alignItems: 'center', justifyContent: 'center',
     },
     streakValue: { color: c.textMain, fontSize: 16, fontWeight: 'bold' },
-    portfolioRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 },
-    portfolioValue: { color: c.textMain, fontSize: 26, fontWeight: 'bold', fontVariant: ['tabular-nums'] },
-    portfolioReturn: { color: c.success, fontSize: 14, fontWeight: '600', marginTop: 4 },
     actionRow: {
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
       backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border,

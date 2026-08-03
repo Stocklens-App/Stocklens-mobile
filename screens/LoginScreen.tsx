@@ -119,7 +119,7 @@ export default function LoginScreen({ route, navigation }: Props) {
               <Ionicons name="mail-outline" size={18} color={colors.textSecondary} style={style.leadingIcon} />
               <TextInput
                 style={style.input}
-                placeholder="you@example.com"
+                placeholder=""
                 placeholderTextColor={colors.textSecondary}
                 value={email}
                 onChangeText={(val) => {
@@ -142,7 +142,7 @@ export default function LoginScreen({ route, navigation }: Props) {
               <TextInput
                 ref={passwordRef}
                 style={style.input}
-                placeholder="••••••••"
+                placeholder=""
                 placeholderTextColor={colors.textSecondary}
                 value={password}
                 onChangeText={(val) => {

@@ -19,7 +19,6 @@ import LearnScreen from './screens/LearnScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import IndexDetailScreen from './screens/IndexDetailScreen';
 import AccountSettingsScreen from './screens/AccountSettingsScreen';
-import MyPortfolioScreen from './screens/MyPortfolioScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import PortfolioScreen from './screens/PortfolioScreen';
 
@@ -145,7 +144,6 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} />
-          <Stack.Screen name="MyPortfolio" component={MyPortfolioScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="IndexDetail" component={IndexDetailScreen} options={{ title: 'Index Details' }} />
           <Stack.Screen name="StockDetail" component={StockDetailScreen} />
