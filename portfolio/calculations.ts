@@ -1,38 +1,39 @@
 // portfolio/calculations.ts
 //
-// Pure functions that turn stored lots + dividends + live stock prices into
-// display-ready positions and portfolio totals. No React, no side effects —
-// so this is unit-testable and the math is auditable.
+// Turns stored lots + sales + dividends + live prices into display-ready
+// positions and totals. Pure and testable — no React, no side effects.
 
 import { calculateFees, FEES } from '../constants/fees';
-import type { PortfolioLot, PortfolioDividend, Stock } from '../types';
+import type { PortfolioLot, PortfolioDividend, PortfolioSale, Stock } from '../types';
 
 export interface Position {
   ticker: string;
   companyName: string;
   logoColor?: string;
-  lotCount: number;
-  totalShares: number;
-  avgBuyPrice: number;      // weighted average price paid per share
-  costBasis: number;        // total paid IN, including buy-side fees
-  currentPrice: number;     // live price (falls back to avgBuyPrice if unknown)
-  priceAvailable: boolean;  // false when the stock isn't in the live list
-  marketValue: number;      // shares × current price
-  unrealizedPL: number;     // marketValue − costBasis
+  lotCount: number;         // active lots (with shares still held)
+  totalShares: number;      // remaining (unsold) shares
+  avgBuyPrice: number;      // weighted avg over remaining shares
+  costBasis: number;        // cost of remaining shares, incl. proportional fees
+  currentPrice: number;
+  priceAvailable: boolean;
+  marketValue: number;
+  unrealizedPL: number;
   unrealizedPLPct: number;
+  realizedGain: number;     // locked-in profit from sales of this ticker
   dividendsReceived: number;
-  totalReturn: number;      // unrealizedPL + dividends
+  totalReturn: number;      // unrealized + realized + dividends
   totalReturnPct: number;
-  breakEvenPrice: number;   // sell price that nets back exactly costBasis, after sell fees
-  allocationPct: number;    // share of total market value (filled once totals are known)
+  breakEvenPrice: number;
+  allocationPct: number;
 }
 
 export interface PortfolioSummary {
   positions: Position[];
-  totalCostBasis: number;
+  totalCostBasis: number;      // active remaining cost basis
   totalMarketValue: number;
   totalUnrealizedPL: number;
   totalUnrealizedPLPct: number;
+  totalRealizedGain: number;
   totalDividends: number;
   totalReturn: number;
   totalReturnPct: number;
@@ -41,24 +42,19 @@ export interface PortfolioSummary {
 const pct = (part: number, whole: number): number =>
   whole === 0 ? 0 : (part / whole) * 100;
 
-/**
- * The all-in fee rate as a fraction of trade value, derived from your fees.ts.
- * calculateFees(1, rate).total is exactly commission·(1+VAT) + GSE + CSD + SEC.
- */
+/** Per-share cost of a lot, including a proportional slice of its buy fees. */
+function costPerShare(lot: PortfolioLot): number {
+  return lot.shares > 0 ? (lot.shares * lot.buyPrice + lot.buyFees) / lot.shares : 0;
+}
+
+/** All-in fee fraction from fees.ts, used for the break-even sell price. */
 function feeRate(commissionRate: number): number {
   return calculateFees(1, commissionRate).total;
 }
 
-/**
- * Break-even sell price for a position.
- *   net proceeds = P·S·(1 − feeRate) must equal costBasis
- *   => P = costBasis / (S · (1 − feeRate))
- * This is the price you must sell at just to recover everything you put in,
- * including the fees on BOTH the original buy and the eventual sell.
- */
-function breakEven(costBasis: number, totalShares: number, commissionRate: number): number {
-  if (totalShares <= 0) return 0;
-  const denom = totalShares * (1 - feeRate(commissionRate));
+function breakEven(costBasis: number, shares: number, commissionRate: number): number {
+  if (shares <= 0) return 0;
+  const denom = shares * (1 - feeRate(commissionRate));
   return denom <= 0 ? 0 : costBasis / denom;
 }
 
@@ -66,52 +62,98 @@ export function buildPortfolio(
   lots: PortfolioLot[],
   dividends: PortfolioDividend[],
   stocks: Stock[],
+  sales: PortfolioSale[] = [],
   sellCommissionRate: number = FEES.BROKERAGE_COMMISSION
 ): PortfolioSummary {
-  // Fast lookups by ticker (uppercased to match how the backend stores them).
   const priceByTicker = new Map<string, Stock>();
-  for (const s of stocks) {
-    if (s.symbol) priceByTicker.set(s.symbol.toUpperCase(), s);
+  for (const s of stocks) if (s.symbol) priceByTicker.set(s.symbol.toUpperCase(), s);
+
+  const lotById = new Map<number, PortfolioLot>();
+  for (const l of lots) lotById.set(l.id, l);
+
+  // Shares sold per lot.
+  const soldByLot = new Map<number, number>();
+  for (const sale of sales) {
+    soldByLot.set(sale.lotId, (soldByLot.get(sale.lotId) ?? 0) + sale.sharesSold);
   }
 
-  const dividendsByTicker = new Map<string, number>();
+  // Dividends per ticker.
+  const divByTicker = new Map<string, number>();
   for (const d of dividends) {
-    const key = d.ticker.toUpperCase();
-    dividendsByTicker.set(key, (dividendsByTicker.get(key) ?? 0) + d.amount);
+    const k = d.ticker.toUpperCase();
+    divByTicker.set(k, (divByTicker.get(k) ?? 0) + d.amount);
   }
 
-  // Group lots by ticker into positions.
-  const lotsByTicker = new Map<string, PortfolioLot[]>();
+  // Realized gain + realized cost basis per ticker.
+  const realizedGainByTicker = new Map<string, number>();
+  const realizedCostByTicker = new Map<string, number>();
+  let totalRealizedGain = 0;
+  for (const sale of sales) {
+    const lot = lotById.get(sale.lotId);
+    if (!lot) continue; // defensive: orphaned sale
+    const cps = costPerShare(lot);
+    const costOut = cps * sale.sharesSold;
+    const proceeds = sale.salePrice * sale.sharesSold - sale.saleFees;
+    const gain = proceeds - costOut;
+    const k = lot.ticker.toUpperCase();
+    realizedGainByTicker.set(k, (realizedGainByTicker.get(k) ?? 0) + gain);
+    realizedCostByTicker.set(k, (realizedCostByTicker.get(k) ?? 0) + costOut);
+    totalRealizedGain += gain;
+  }
+
+  // Active positions: aggregate remaining (unsold) shares per ticker.
+  interface Acc {
+    remainingShares: number;
+    grossBuyRemaining: number; // buyPrice × remaining, for avg price
+    costBasisRemaining: number; // costPerShare × remaining
+    lotCount: number;
+    companyName?: string;
+  }
+  const accByTicker = new Map<string, Acc>();
+
   for (const lot of lots) {
-    const key = lot.ticker.toUpperCase();
-    const arr = lotsByTicker.get(key) ?? [];
-    arr.push(lot);
-    lotsByTicker.set(key, arr);
+    const sold = soldByLot.get(lot.id) ?? 0;
+    const remaining = lot.shares - sold;
+    if (remaining <= 0) continue; // fully sold — no active shares
+    const k = lot.ticker.toUpperCase();
+    const cps = costPerShare(lot);
+    const a = accByTicker.get(k) ?? {
+      remainingShares: 0, grossBuyRemaining: 0, costBasisRemaining: 0, lotCount: 0,
+      companyName: lot.companyName ?? undefined,
+    };
+    a.remainingShares += remaining;
+    a.grossBuyRemaining += lot.buyPrice * remaining;
+    a.costBasisRemaining += cps * remaining;
+    a.lotCount += 1;
+    accByTicker.set(k, a);
   }
 
+  // Every ticker that has either active shares or realized history gets a row.
+  const tickers = new Set<string>([...accByTicker.keys(), ...realizedGainByTicker.keys()]);
   const positions: Position[] = [];
 
-  for (const [ticker, group] of lotsByTicker) {
-    const totalShares = group.reduce((n, l) => n + l.shares, 0);
-    const grossBuyCost = group.reduce((n, l) => n + l.shares * l.buyPrice, 0);
-    const totalBuyFees = group.reduce((n, l) => n + l.buyFees, 0);
-    const costBasis = grossBuyCost + totalBuyFees;
-    const avgBuyPrice = totalShares > 0 ? grossBuyCost / totalShares : 0;
-
+  for (const ticker of tickers) {
+    const a = accByTicker.get(ticker);
     const stock = priceByTicker.get(ticker);
+    const totalShares = a?.remainingShares ?? 0;
+    const costBasis = a?.costBasisRemaining ?? 0;
+    const avgBuyPrice = totalShares > 0 ? (a!.grossBuyRemaining / totalShares) : 0;
+
     const priceAvailable = !!stock && typeof stock.currentPrice === 'number';
     const currentPrice = priceAvailable ? stock!.currentPrice : avgBuyPrice;
-
     const marketValue = totalShares * currentPrice;
-    const unrealizedPL = marketValue - costBasis;
-    const dividendsReceived = dividendsByTicker.get(ticker) ?? 0;
-    const totalReturn = unrealizedPL + dividendsReceived;
+    const unrealizedPL = totalShares > 0 ? marketValue - costBasis : 0;
+
+    const realizedGain = realizedGainByTicker.get(ticker) ?? 0;
+    const realizedCost = realizedCostByTicker.get(ticker) ?? 0;
+    const dividendsReceived = divByTicker.get(ticker) ?? 0;
+    const totalReturn = unrealizedPL + realizedGain + dividendsReceived;
 
     positions.push({
       ticker,
-      companyName: stock?.name ?? group[0].companyName ?? ticker,
+      companyName: stock?.name ?? a?.companyName ?? ticker,
       logoColor: stock?.logoColor,
-      lotCount: group.length,
+      lotCount: a?.lotCount ?? 0,
       totalShares,
       avgBuyPrice,
       costBasis,
@@ -120,26 +162,25 @@ export function buildPortfolio(
       marketValue,
       unrealizedPL,
       unrealizedPLPct: pct(unrealizedPL, costBasis),
+      realizedGain,
       dividendsReceived,
       totalReturn,
-      totalReturnPct: pct(totalReturn, costBasis),
+      totalReturnPct: pct(totalReturn, costBasis + realizedCost),
       breakEvenPrice: breakEven(costBasis, totalShares, sellCommissionRate),
-      allocationPct: 0, // set below once we know the grand total
+      allocationPct: 0,
     });
   }
 
-  // Portfolio totals.
   const totalCostBasis = positions.reduce((n, p) => n + p.costBasis, 0);
   const totalMarketValue = positions.reduce((n, p) => n + p.marketValue, 0);
-  const totalUnrealizedPL = totalMarketValue - totalCostBasis;
+  const totalUnrealizedPL = positions.reduce((n, p) => n + p.unrealizedPL, 0);
   const totalDividends = dividends.reduce((n, d) => n + d.amount, 0);
-  const totalReturn = totalUnrealizedPL + totalDividends;
+  const totalReturn = totalUnrealizedPL + totalRealizedGain + totalDividends;
+  const totalRealizedCost = [...realizedCostByTicker.values()].reduce((n, v) => n + v, 0);
 
-  // Fill allocation now that the denominator exists, and sort biggest-first.
-  for (const p of positions) {
-    p.allocationPct = pct(p.marketValue, totalMarketValue);
-  }
-  positions.sort((a, b) => b.marketValue - a.marketValue);
+  for (const p of positions) p.allocationPct = pct(p.marketValue, totalMarketValue);
+  // Active first (by value), then fully-sold-but-realized rows.
+  positions.sort((x, y) => y.marketValue - x.marketValue);
 
   return {
     positions,
@@ -147,8 +188,9 @@ export function buildPortfolio(
     totalMarketValue,
     totalUnrealizedPL,
     totalUnrealizedPLPct: pct(totalUnrealizedPL, totalCostBasis),
+    totalRealizedGain,
     totalDividends,
     totalReturn,
-    totalReturnPct: pct(totalReturn, totalCostBasis),
+    totalReturnPct: pct(totalReturn, totalCostBasis + totalRealizedCost),
   };
 }

@@ -11,6 +11,8 @@ import { useAppContext } from '../context/AppContext';
 import { buildPortfolio, Position } from '../portfolio/calculations';
 import AddHoldingModal from '../components/AddHoldingModal';
 import AddDividendModal from '../components/AddDividendModal';
+import SellLotModal from '../components/SellLotModal';
+import type { PortfolioLot } from '../types';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -29,16 +31,32 @@ export default function PortfolioScreen({ navigation }: { navigation: Nav }) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const {
-    lots, dividends, stocks, portfolioLoading, portfolioError,
+    lots, dividends, sales, stocks, portfolioLoading, portfolioError,
     refetchPortfolio, deleteLot,
   } = useAppContext();
 
   const [addOpen, setAddOpen] = useState(false);
   const [divFor, setDivFor] = useState<string | null>(null);
+  const [sellTarget, setSellTarget] = useState<{ lot: PortfolioLot; remaining: number; price: number | null } | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const summary = useMemo(() => buildPortfolio(lots, dividends, stocks), [lots, dividends, stocks]);
+  const summary = useMemo(
+    () => buildPortfolio(lots, dividends, stocks, sales),
+    [lots, dividends, stocks, sales]
+  );
+
+  // Remaining shares per lot, from sales.
+  const soldByLot = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const s of sales) m.set(s.lotId, (m.get(s.lotId) ?? 0) + s.sharesSold);
+    return m;
+  }, [sales]);
+
+  const priceFor = (ticker: string): number | null => {
+    const s = stocks.find((st) => st.symbol.toUpperCase() === ticker.toUpperCase());
+    return s && typeof s.currentPrice === 'number' ? s.currentPrice : null;
+  };
 
   const onRefresh = async () => { setRefreshing(true); await refetchPortfolio(); setRefreshing(false); };
 
@@ -48,7 +66,7 @@ export default function PortfolioScreen({ navigation }: { navigation: Nav }) {
   };
 
   const confirmDeleteLot = (id: number) => {
-    Alert.alert('Remove this purchase?', 'This lot will be permanently removed.', [
+    Alert.alert('Remove this purchase?', 'This lot and any sales recorded against it will be permanently removed.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Remove', style: 'destructive', onPress: () => deleteLot(id).catch(() => Alert.alert('Error', 'Could not remove. Try again.')) },
     ]);
@@ -84,9 +102,13 @@ export default function PortfolioScreen({ navigation }: { navigation: Nav }) {
   const renderPosition = ({ item }: { item: Position }) => {
     const isOpen = expanded === item.ticker;
     const plColor = item.unrealizedPL >= 0 ? colors.success : colors.error;
+    const soldOut = item.totalShares <= 0;
+
     const posLots = lots
       .filter((l) => l.ticker.toUpperCase() === item.ticker)
-      .sort((a, b) => b.id - a.id);
+      .map((l) => ({ lot: l, remaining: l.shares - (soldByLot.get(l.id) ?? 0) }))
+      .filter((x) => x.remaining > 0)
+      .sort((a, b) => b.lot.id - a.lot.id);
 
     return (
       <View style={styles.card}>
@@ -97,42 +119,56 @@ export default function PortfolioScreen({ navigation }: { navigation: Nav }) {
           <View style={{ flex: 1, marginLeft: 12 }}>
             <Text style={styles.ticker}>{item.ticker}</Text>
             <Text style={styles.sub} numberOfLines={1}>
-              {item.totalShares} share{item.totalShares === 1 ? '' : 's'} · avg ₵{item.avgBuyPrice.toFixed(2)}
+              {soldOut
+                ? 'Sold out · realized only'
+                : `${item.totalShares} share${item.totalShares === 1 ? '' : 's'} · avg ₵${item.avgBuyPrice.toFixed(2)}`}
             </Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.value}>{money(item.marketValue)}</Text>
-            <Text style={[styles.change, { color: item.priceAvailable ? plColor : colors.textSecondary }]}>
-              {item.priceAvailable ? pctStr(item.unrealizedPLPct) : 'price n/a'}
+            <Text style={styles.value}>{soldOut ? money(item.realizedGain) : money(item.marketValue)}</Text>
+            <Text style={[styles.change, { color: soldOut ? (item.realizedGain >= 0 ? colors.success : colors.error) : (item.priceAvailable ? plColor : colors.textSecondary) }]}>
+              {soldOut ? 'realized' : (item.priceAvailable ? pctStr(item.unrealizedPLPct) : 'price n/a')}
             </Text>
           </View>
         </TouchableOpacity>
 
         {isOpen && (
           <View style={styles.detail}>
-            <Row c={colors} label="Current price" value={item.priceAvailable ? `₵${item.currentPrice.toFixed(2)}` : '—'} />
-            <Row c={colors} label="Cost basis (incl. fees)" value={money(item.costBasis)} />
-            <Row c={colors} label="Unrealized P/L" value={`${money(item.unrealizedPL)} (${pctStr(item.unrealizedPLPct)})`} valueColor={plColor} />
-            <Row c={colors} label="Break-even price" value={`₵${item.breakEvenPrice.toFixed(2)}`} />
+            {!soldOut && <Row c={colors} label="Current price" value={item.priceAvailable ? `₵${item.currentPrice.toFixed(2)}` : '—'} />}
+            {!soldOut && <Row c={colors} label="Cost basis (incl. fees)" value={money(item.costBasis)} />}
+            {!soldOut && <Row c={colors} label="Unrealized P/L" value={`${money(item.unrealizedPL)} (${pctStr(item.unrealizedPLPct)})`} valueColor={plColor} />}
+            {!soldOut && <Row c={colors} label="Break-even price" value={`₵${item.breakEvenPrice.toFixed(2)}`} />}
+            <Row c={colors} label="Realized gain" value={money(item.realizedGain)} valueColor={item.realizedGain >= 0 ? colors.success : colors.error} />
             <Row c={colors} label="Dividends received" value={money(item.dividendsReceived)} />
             <Row c={colors} label="Total return" value={`${money(item.totalReturn)} (${pctStr(item.totalReturnPct)})`} valueColor={item.totalReturn >= 0 ? colors.success : colors.error} />
 
-            <View style={styles.lotsHead}><Text style={styles.lotsTitle}>Purchases</Text></View>
-            {posLots.map((l) => (
-              <View key={l.id} style={styles.lotRow}>
-                <Text style={styles.lotText}>{l.shares} @ ₵{l.buyPrice.toFixed(2)}</Text>
-                <TouchableOpacity onPress={() => confirmDeleteLot(l.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="trash-outline" size={18} color={colors.error} />
-                </TouchableOpacity>
-              </View>
-            ))}
+            {posLots.length > 0 && (
+              <>
+                <View style={styles.lotsHead}><Text style={styles.lotsTitle}>Holdings</Text></View>
+                {posLots.map(({ lot, remaining }) => (
+                  <View key={lot.id} style={styles.lotRow}>
+                    <Text style={styles.lotText}>{remaining} @ ₵{lot.buyPrice.toFixed(2)}</Text>
+                    <View style={styles.lotActions}>
+                      <TouchableOpacity
+                        onPress={() => setSellTarget({ lot, remaining, price: priceFor(item.ticker) })}
+                        style={styles.sellBtn} activeOpacity={0.7}>
+                        <Text style={styles.sellText}>Sell</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => confirmDeleteLot(lot.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="trash-outline" size={18} color={colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
 
             <View style={styles.actionRow}>
               <TouchableOpacity style={styles.action} onPress={() => setDivFor(item.ticker)} activeOpacity={0.7}>
                 <Ionicons name="cash-outline" size={16} color={colors.primary} />
                 <Text style={styles.actionText}>Log dividend</Text>
               </TouchableOpacity>
-              {item.priceAvailable && (
+              {item.priceAvailable && !soldOut && (
                 <TouchableOpacity style={styles.action} onPress={() => openStock(item.ticker)} activeOpacity={0.7}>
                   <Ionicons name="open-outline" size={16} color={colors.primary} />
                   <Text style={styles.actionText}>View stock</Text>
@@ -151,19 +187,25 @@ export default function PortfolioScreen({ navigation }: { navigation: Nav }) {
         <Text style={styles.summaryLabel}>Portfolio value</Text>
         <Text style={styles.summaryValue}>{money(summary.totalMarketValue)}</Text>
         <Text style={[styles.summaryPL, { color: summary.totalUnrealizedPL >= 0 ? colors.success : colors.error }]}>
-          {money(summary.totalUnrealizedPL)} ({pctStr(summary.totalUnrealizedPLPct)})
+          {money(summary.totalUnrealizedPL)} ({pctStr(summary.totalUnrealizedPLPct)}) unrealized
         </Text>
         <View style={styles.grid}>
           <Cell c={colors} label="Invested" value={money(summary.totalCostBasis)} />
+          <Cell c={colors} label="Realized" value={money(summary.totalRealizedGain)}
+            valueColor={summary.totalRealizedGain >= 0 ? colors.success : colors.error} />
           <Cell c={colors} label="Dividends" value={money(summary.totalDividends)} />
-          <Cell c={colors} label="Total return" value={pctStr(summary.totalReturnPct)}
-            valueColor={summary.totalReturn >= 0 ? colors.success : colors.error} />
+        </View>
+        <View style={styles.totalReturnRow}>
+          <Text style={styles.trLabel}>Total return</Text>
+          <Text style={[styles.trVal, { color: summary.totalReturn >= 0 ? colors.success : colors.error }]}>
+            {money(summary.totalReturn)} ({pctStr(summary.totalReturnPct)})
+          </Text>
         </View>
       </View>
 
-      {summary.positions.length > 0 && (
+      {summary.positions.some((p) => p.marketValue > 0) && (
         <View style={styles.allocBar}>
-          {summary.positions.map((p) => (
+          {summary.positions.filter((p) => p.marketValue > 0).map((p) => (
             <View key={p.ticker} style={{ flex: Math.max(p.allocationPct, 0.5), backgroundColor: p.logoColor || colors.primary }} />
           ))}
         </View>
@@ -203,6 +245,13 @@ export default function PortfolioScreen({ navigation }: { navigation: Nav }) {
 
       <AddHoldingModal visible={addOpen} onClose={() => setAddOpen(false)} />
       <AddDividendModal visible={divFor !== null} ticker={divFor} onClose={() => setDivFor(null)} />
+      <SellLotModal
+        visible={sellTarget !== null}
+        lot={sellTarget?.lot ?? null}
+        remaining={sellTarget?.remaining ?? 0}
+        currentPrice={sellTarget?.price ?? null}
+        onClose={() => setSellTarget(null)}
+      />
     </View>
   );
 }
@@ -234,14 +283,14 @@ const makeStyles = (c: ThemeColors) =>
     errTitle: { color: c.textMain, fontSize: 17, fontWeight: '600' },
     retry: { backgroundColor: c.primary, paddingHorizontal: 26, paddingVertical: 11, borderRadius: 10, marginTop: 18 },
     retryText: { color: '#FFFFFF', fontWeight: '600' },
-    summary: {
-      backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: 18,
-      padding: 18, marginTop: SIZES.padding,
-    },
+    summary: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: 18, padding: 18, marginTop: SIZES.padding },
     summaryLabel: { color: c.textSecondary, fontSize: 13 },
     summaryValue: { color: c.textMain, fontSize: 32, fontWeight: '800', marginTop: 4, fontVariant: ['tabular-nums'] },
-    summaryPL: { fontSize: 15, fontWeight: '700', marginTop: 4, fontVariant: ['tabular-nums'] },
+    summaryPL: { fontSize: 14, fontWeight: '700', marginTop: 4, fontVariant: ['tabular-nums'] },
     grid: { flexDirection: 'row', marginTop: 16, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 14 },
+    totalReturnRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 12 },
+    trLabel: { color: c.textMain, fontSize: 14, fontWeight: '700' },
+    trVal: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
     allocBar: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 14, gap: 2 },
     listHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 22, marginBottom: 6 },
     listHead: { color: c.textMain, fontSize: 18, fontWeight: '700' },
@@ -260,6 +309,9 @@ const makeStyles = (c: ThemeColors) =>
     lotsTitle: { color: c.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
     lotRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 7 },
     lotText: { color: c.textMain, fontSize: 13, fontVariant: ['tabular-nums'] },
+    lotActions: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+    sellBtn: { borderWidth: 1, borderColor: c.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 },
+    sellText: { color: c.primary, fontSize: 13, fontWeight: '600' },
     actionRow: { flexDirection: 'row', gap: 10, marginTop: 14 },
     action: { flexDirection: 'row', alignItems: 'center', gap: 5, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 },
     actionText: { color: c.primary, fontSize: 13, fontWeight: '600' },

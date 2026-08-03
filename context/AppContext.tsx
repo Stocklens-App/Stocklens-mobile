@@ -1,4 +1,3 @@
-// context/AppContext.tsx
 import React, {
   createContext,
   useContext,
@@ -19,8 +18,10 @@ import type {
   UserProfile,
   PortfolioLot,
   PortfolioDividend,
+  PortfolioSale,
   AddLotRequest,
   AddDividendRequest,
+  AddSaleRequest,
 } from '../types';
 
 // current backend IP
@@ -69,6 +70,7 @@ interface AppContextValue {
 
   // Portfolio
   lots: PortfolioLot[];
+  sales: PortfolioSale[];
   dividends: PortfolioDividend[];
   portfolioLoading: boolean;
   portfolioError: string | null;
@@ -76,6 +78,8 @@ interface AppContextValue {
   addLot: (req: AddLotRequest) => Promise<PortfolioLot>;
   updateLot: (id: number, req: AddLotRequest) => Promise<PortfolioLot>;
   deleteLot: (id: number) => Promise<void>;
+  addSale: (req: AddSaleRequest) => Promise<PortfolioSale>;
+  deleteSale: (id: number) => Promise<void>;
   addDividend: (req: AddDividendRequest) => Promise<PortfolioDividend>;
   deleteDividend: (id: number) => Promise<void>;
 }
@@ -117,6 +121,7 @@ export function AppProvider({ children }: AppProviderProps) {
 
   // ── Portfolio tab ──
   const [lots, setLots] = useState<PortfolioLot[]>([]);
+  const [sales, setSales] = useState<PortfolioSale[]>([]);
   const [dividends, setDividends] = useState<PortfolioDividend[]>([]);
   const [portfolioLoading, setPortfolioLoading] = useState<boolean>(true);
   const [portfolioError, setPortfolioError] = useState<string | null>(null);
@@ -240,11 +245,13 @@ export function AppProvider({ children }: AppProviderProps) {
     try {
       setPortfolioLoading(true);
       setPortfolioError(null);
-      const [lotsRes, divRes] = await Promise.all([
+      const [lotsRes, salesRes, divRes] = await Promise.all([
         api.get<PortfolioLot[]>('/portfolio-tracker/lots'),
+        api.get<PortfolioSale[]>('/portfolio-tracker/sales'),
         api.get<PortfolioDividend[]>('/portfolio-tracker/dividends'),
       ]);
       setLots(lotsRes.data || []);
+      setSales(salesRes.data || []);
       setDividends(divRes.data || []);
     } catch (err) {
       setPortfolioError('Could not load your portfolio. Check your connection.');
@@ -258,6 +265,17 @@ export function AppProvider({ children }: AppProviderProps) {
     const { data } = await api.post<PortfolioLot>('/portfolio-tracker/lots', req);
     setLots((prev) => [data, ...prev]);
     return data;
+  }, []);
+
+  const addSale = useCallback(async (req: AddSaleRequest): Promise<PortfolioSale> => {
+    const { data } = await api.post<PortfolioSale>('/portfolio-tracker/sales', req);
+    setSales((prev) => [data, ...prev]);
+    return data;
+  }, []);
+
+  const deleteSale = useCallback(async (id: number): Promise<void> => {
+    await api.delete(`/portfolio-tracker/sales/${id}`);
+    setSales((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
   const updateLot = useCallback(
@@ -401,6 +419,7 @@ export function AppProvider({ children }: AppProviderProps) {
 
     // Portfolio
     lots,
+    sales,
     dividends,
     portfolioLoading,
     portfolioError,
@@ -408,6 +427,8 @@ export function AppProvider({ children }: AppProviderProps) {
     addLot,
     updateLot,
     deleteLot,
+    addSale,
+    deleteSale,
     addDividend,
     deleteDividend,
   };

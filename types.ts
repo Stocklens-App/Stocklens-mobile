@@ -124,3 +124,23 @@ export interface AddDividendRequest {
   paymentDate?: string;
   notes?: string;
 }
+
+export interface PortfolioSale {
+  id: number;
+  lotId: number;
+  ticker: string;
+  sharesSold: number;
+  salePrice: number;
+  saleFees: number;
+  saleDate: string;
+  notes?: string | null;
+}
+
+export interface AddSaleRequest {
+  lotId: number;
+  sharesSold: number;
+  salePrice: number;
+  saleFees: number;
+  saleDate?: string;
+  notes?: string;
+}
