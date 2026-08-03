@@ -82,3 +82,45 @@ export interface UserProfile {
   pushToken?: string | null;
   profilePhoto?: string | null;
 }
+
+// ── Portfolio tracker ──
+
+export interface PortfolioLot {
+  id: number;
+  ticker: string;
+  companyName?: string | null;
+  shares: number;
+  buyPrice: number;
+  buyFees: number;
+  brokerId?: number | null;
+  purchaseDate: string; // ISO yyyy-mm-dd
+  notes?: string | null;
+}
+
+export interface PortfolioDividend {
+  id: number;
+  ticker: string;
+  amount: number;
+  perShare?: number | null;
+  paymentDate: string; // ISO yyyy-mm-dd
+  notes?: string | null;
+}
+
+export interface AddLotRequest {
+  ticker: string;
+  companyName?: string;
+  shares: number;
+  buyPrice: number;
+  buyFees: number;
+  brokerId?: number | null;
+  purchaseDate?: string;
+  notes?: string;
+}
+
+export interface AddDividendRequest {
+  ticker: string;
+  amount: number;
+  perShare?: number;
+  paymentDate?: string;
+  notes?: string;
+}

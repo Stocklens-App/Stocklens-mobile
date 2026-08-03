@@ -21,6 +21,8 @@ import IndexDetailScreen from './screens/IndexDetailScreen';
 import AccountSettingsScreen from './screens/AccountSettingsScreen';
 import MyPortfolioScreen from './screens/MyPortfolioScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
+import PortfolioScreen from './screens/PortfolioScreen';
+
 // @ts-ignore - AppContext is still a plain JS module
 import { AppProvider, useAppContext } from './context/AppContext';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
@@ -82,6 +84,16 @@ function MainTabNavigator({ route }: MainTabNavigatorProps) {
         options={{
           tabBarIcon: ({ color, size }: { color: string; size: number }) => (
             <Ionicons name="analytics" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Portfolio"
+        component={PortfolioScreen}
+        options={{
+          tabBarLabel: 'Portfolio',
+          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+            <Ionicons name="pie-chart" size={size} color={color} />
           ),
         }}
       />

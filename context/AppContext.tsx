@@ -17,6 +17,10 @@ import type {
   TrendingStock,
   AcademicModule,
   UserProfile,
+  PortfolioLot,
+  PortfolioDividend,
+  AddLotRequest,
+  AddDividendRequest,
 } from '../types';
 
 // current backend IP
@@ -62,6 +66,18 @@ interface AppContextValue {
   modulesLoading: boolean;
   modulesError: string | null;
   refetchModules: () => Promise<void>;
+
+  // Portfolio
+  lots: PortfolioLot[];
+  dividends: PortfolioDividend[];
+  portfolioLoading: boolean;
+  portfolioError: string | null;
+  refetchPortfolio: () => Promise<void>;
+  addLot: (req: AddLotRequest) => Promise<PortfolioLot>;
+  updateLot: (id: number, req: AddLotRequest) => Promise<PortfolioLot>;
+  deleteLot: (id: number) => Promise<void>;
+  addDividend: (req: AddDividendRequest) => Promise<PortfolioDividend>;
+  deleteDividend: (id: number) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -99,6 +115,12 @@ export function AppProvider({ children }: AppProviderProps) {
   const [modulesLoading, setModulesLoading] = useState<boolean>(true);
   const [modulesError, setModulesError] = useState<string | null>(null);
 
+  // ── Portfolio tab ──
+  const [lots, setLots] = useState<PortfolioLot[]>([]);
+  const [dividends, setDividends] = useState<PortfolioDividend[]>([]);
+  const [portfolioLoading, setPortfolioLoading] = useState<boolean>(true);
+  const [portfolioError, setPortfolioError] = useState<string | null>(null);
+
   const signOut = useCallback(async (): Promise<void> => {
     await AsyncStorage.multiRemove(['token', 'email', 'userName']);
     delete api.defaults.headers.common['Authorization'];
@@ -111,6 +133,8 @@ export function AppProvider({ children }: AppProviderProps) {
     setScamAlerts([]);
     setStocks([]);
     setModules([]);
+    setLots([]);
+    setDividends([]);
     setUnreadCount(0);
     setNotificationsEnabled(false);
   }, []);
@@ -212,6 +236,55 @@ export function AppProvider({ children }: AppProviderProps) {
     }
   }, []);
 
+  const fetchPortfolio = useCallback(async (): Promise<void> => {
+    try {
+      setPortfolioLoading(true);
+      setPortfolioError(null);
+      const [lotsRes, divRes] = await Promise.all([
+        api.get<PortfolioLot[]>('/portfolio-tracker/lots'),
+        api.get<PortfolioDividend[]>('/portfolio-tracker/dividends'),
+      ]);
+      setLots(lotsRes.data || []);
+      setDividends(divRes.data || []);
+    } catch (err) {
+      setPortfolioError('Could not load your portfolio. Check your connection.');
+      console.log('AppContext portfolio fetch error:', (err as Error).message);
+    } finally {
+      setPortfolioLoading(false);
+    }
+  }, []);
+
+  const addLot = useCallback(async (req: AddLotRequest): Promise<PortfolioLot> => {
+    const { data } = await api.post<PortfolioLot>('/portfolio-tracker/lots', req);
+    setLots((prev) => [data, ...prev]);
+    return data;
+  }, []);
+
+  const updateLot = useCallback(
+    async (id: number, req: AddLotRequest): Promise<PortfolioLot> => {
+      const { data } = await api.put<PortfolioLot>(`/portfolio-tracker/lots/${id}`, req);
+      setLots((prev) => prev.map((l) => (l.id === id ? data : l)));
+      return data;
+    },
+    []
+  );
+
+  const deleteLot = useCallback(async (id: number): Promise<void> => {
+    await api.delete(`/portfolio-tracker/lots/${id}`);
+    setLots((prev) => prev.filter((l) => l.id !== id));
+  }, []);
+
+  const addDividend = useCallback(async (req: AddDividendRequest): Promise<PortfolioDividend> => {
+    const { data } = await api.post<PortfolioDividend>('/portfolio-tracker/dividends', req);
+    setDividends((prev) => [data, ...prev]);
+    return data;
+  }, []);
+
+  const deleteDividend = useCallback(async (id: number): Promise<void> => {
+    await api.delete(`/portfolio-tracker/dividends/${id}`);
+    setDividends((prev) => prev.filter((d) => d.id !== id));
+  }, []);
+
   const refreshUnreadCount = useCallback(async (): Promise<void> => {
     try {
       const res = await api.get<{ unreadCount: number }>('/api/notifications/unread-count');
@@ -227,8 +300,9 @@ export function AppProvider({ children }: AppProviderProps) {
     fetchHomeData();
     fetchStocks();
     fetchModules();
+    fetchPortfolio();
     refreshUnreadCount();
-  }, [token, fetchHomeData, fetchStocks, fetchModules, refreshUnreadCount]);
+  }, [token, fetchHomeData, fetchStocks, fetchModules, fetchPortfolio, refreshUnreadCount]);
 
   // Load the signed-in user's profile — notification preference, photo, push.
   useEffect(() => {
@@ -324,6 +398,18 @@ export function AppProvider({ children }: AppProviderProps) {
     modulesLoading,
     modulesError,
     refetchModules: fetchModules,
+
+    // Portfolio
+    lots,
+    dividends,
+    portfolioLoading,
+    portfolioError,
+    refetchPortfolio: fetchPortfolio,
+    addLot,
+    updateLot,
+    deleteLot,
+    addDividend,
+    deleteDividend,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
