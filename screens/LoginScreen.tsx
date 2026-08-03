@@ -109,9 +109,6 @@ export default function LoginScreen({ route, navigation }: Props) {
           <Text style={style.wordmark}>
             Stock<Text style={{ color: colors.primary }}>Lens</Text>
           </Text>
-          <Text style={style.subTitle}>
-            Track stocks, learn the ropes and grow your money on the Ghana Stock Exchange.
-          </Text>
 
           <View style={style.inputContainer}>
             <Text style={style.label}>EMAIL</Text>
@@ -201,8 +198,7 @@ const makeStyles = (c: ThemeColors) =>
       justifyContent: 'center',
       marginBottom: 20,
     },
-    wordmark: { fontSize: 34, fontWeight: '800', color: c.textMain, letterSpacing: -1 },
-    subTitle: { fontSize: 14, color: c.textSecondary, marginTop: 8, marginBottom: 32, lineHeight: 20 },
+    wordmark: { fontSize: 34, fontWeight: '800', color: c.textMain, letterSpacing: -1, marginBottom: 32 },
     inputContainer: { width: '100%' },
     label: { fontSize: 11, fontWeight: '700', color: c.textSecondary, letterSpacing: 1, marginBottom: 8 },
     inputWrapper: {
